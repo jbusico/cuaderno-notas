@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Cuaderno de Notas</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Notas">
+<meta name="theme-color" content="#22201B">
+<link rel="apple-touch-icon" href="LOGO CARMEN - ESCUDO.jpg">
+<link rel="icon" href="LOGO CARMEN - ESCUDO.jpg" type="image/jpeg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAF6EE;
+  --paper-raised:#FFFFFF;
+  --ink:#22201B;
+  --ink-soft:#5B564C;
+  --ink-faint:#948C7C;
+  --line:#E1D8C4;
+  --line-strong:#CBBFA4;
+  --primaria:#2F5D8A;
+  --primaria-soft:#E6EDF4;
+  --secundaria:#B5502F;
+  --secundaria-soft:#F5E7DF;
+  --tier4:#3F7D5C;
+  --tier4-soft:#E4EFE8;
+  --tier3:#2B7BA6;
+  --tier3-soft:#E3EEF3;
+  --tier2:#B8862B;
+  --tier2-soft:#F3ECDC;
+  --tier1:#B5502F;
+  --tier1-soft:#F5E7DF;
+  --pending:#C6912A;
+  --pending-soft:#FBF1DC;
+  --radius-s:10px;
+  --radius-m:16px;
+  --radius-l:26px;
+  --shadow-card:0 1px 2px rgba(34,32,27,0.06), 0 8px 24px -12px rgba(34,32,27,0.18);
+  --shadow-modal:0 20px 60px -12px rgba(34,32,27,0.45);
+  font-size:16px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  min-height:100dvh;
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+  overscroll-behavior-y:none;
+}
+h1,h2,h3,.serif{font-family:'Fraunces',Georgia,serif;}
+button{font-family:inherit;}
+::selection{background:#D9CBA9;}
+
+/* ---------- layout shells ---------- */
+#app{max-width:1080px;margin:0 auto;padding:20px 18px 64px;}
+.topbar{
+  display:flex;align-items:center;gap:12px;
+  margin-bottom:22px;
+}
+.topbar .back{
+  display:flex;align-items:center;justify-content:center;
+  width:40px;height:40px;border-radius:50%;
+  background:var(--paper-raised);border:1px solid var(--line);
+  font-size:18px;cursor:pointer;flex:none;
+  color:var(--ink);
+}
+.topbar .back:active{transform:scale(0.94);}
+.topbar .crumbs{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.topbar .crumbs .eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-faint);font-weight:600;
+}
+.topbar .crumbs h1{margin:0;font-size:22px;font-weight:600;line-height:1.15;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.topbar .spacer{flex:1;}
+.topbar .pending-pill{
+  font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;
+  background:var(--pending-soft);color:var(--pending);border:1px solid #ecd9ab;
+  padding:6px 11px;border-radius:100px;white-space:nowrap;
+}
+
+/* ---------- home ---------- */
+.home-hero{margin:8px 0 30px;}
+.home-hero .eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-faint);font-weight:600;margin-bottom:6px;
+}
+.home-hero h1{font-size:clamp(32px,6vw,46px);margin:0 0 6px;font-weight:600;letter-spacing:-.01em;}
+.home-hero p{color:var(--ink-soft);margin:0;font-size:15px;max-width:46ch;}
+
+.nivel-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media (max-width:620px){.nivel-grid{grid-template-columns:1fr;}}
+.nivel-card{
+  position:relative;overflow:hidden;
+  border-radius:var(--radius-l);
+  padding:28px 24px 24px;
+  min-height:190px;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  cursor:pointer;border:none;text-align:left;
+  color:#fff;
+  box-shadow:var(--shadow-card);
+  transition:transform .15s ease;
+}
+.nivel-card:active{transform:scale(0.985);}
+.nivel-card.primaria{background:linear-gradient(155deg,#3B6FA0 0%, #274A70 100%);}
+.nivel-card.secundaria{background:linear-gradient(155deg,#CB6B45 0%, #8F3D22 100%);}
+.nivel-card .tab-mark{
+  position:absolute;top:0;right:22px;width:46px;height:64px;
+  background:rgba(255,255,255,0.16);border-radius:0 0 12px 12px;
+}
+.nivel-card .tag{
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;opacity:.85;margin-bottom:10px;font-weight:600;
+}
+.nivel-card h2{font-size:30px;margin:0 0 6px;font-weight:600;}
+.nivel-card .meta{font-size:13px;opacity:.9;}
+
+/* ---------- curso grid ---------- */
+.curso-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;}
+.curso-card{
+  background:var(--paper-raised);border:1px solid var(--line);
+  border-radius:var(--radius-m);padding:18px 16px 16px;cursor:pointer;
+  text-align:left;box-shadow:var(--shadow-card);
+  transition:transform .12s ease, border-color .12s ease;
+  display:flex;flex-direction:column;gap:10px;min-height:120px;
+}
+.curso-card:active{transform:scale(0.97);}
+.curso-card .top-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.curso-card h3{margin:0;font-size:18px;font-weight:600;line-height:1.2;}
+.curso-card .count{
+  font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-soft);
+}
+.curso-card .pend-badge{
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  background:var(--pending-soft);color:var(--pending);border-radius:100px;
+  padding:3px 8px;white-space:nowrap;
+}
+.add-curso-card{
+  border:1.5px dashed var(--line-strong);background:transparent;border-radius:var(--radius-m);
+  display:flex;align-items:center;justify-content:center;color:var(--ink-faint);
+  font-size:14px;font-weight:600;cursor:pointer;min-height:120px;
+}
+.add-curso-card:active{background:var(--paper-raised);}
+
+/* ---------- toolbar ---------- */
+.toolbar{
+  display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;
+}
+.tbtn{
+  display:flex;align-items:center;gap:7px;
+  background:var(--paper-raised);border:1px solid var(--line);
+  border-radius:100px;padding:9px 15px;font-size:13.5px;font-weight:600;
+  color:var(--ink);cursor:pointer;white-space:nowrap;
+}
+.tbtn:active{background:var(--line);}
+.tbtn .ic{font-size:15px;}
+
+/* ---------- bimestre tabs ---------- */
+.bimestre-tabs{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px;}
+.bimestre-tab{
+  flex:none;
+  font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;
+  padding:9px 14px;border-radius:10px 10px 0 0;
+  background:transparent;color:var(--ink-faint);cursor:pointer;border:none;
+  border-bottom:3px solid transparent;
+}
+.bimestre-tab.active{color:var(--ink);border-bottom:3px solid var(--accent,var(--primaria));}
+
+/* ---------- search ---------- */
+.search-row{margin-bottom:14px;}
+.search-row input{
+  width:100%;padding:11px 14px;border-radius:12px;border:1px solid var(--line);
+  background:var(--paper-raised);font-size:14px;color:var(--ink);
+}
+.search-row input:focus{outline:2px solid var(--accent,var(--primaria));outline-offset:1px;}
+
+/* ---------- table ---------- */
+.table-wrap{
+  border:1px solid var(--line);border-radius:var(--radius-m);overflow:auto;
+  background:var(--paper-raised);box-shadow:var(--shadow-card);
+  max-height:70vh;
+}
+table.grades{border-collapse:separate;border-spacing:0;width:100%;min-width:520px;}
+table.grades thead th{
+  position:sticky;top:0;background:var(--paper-raised);z-index:2;
+  padding:12px 10px;border-bottom:1px solid var(--line);
+  font-size:12px;text-align:center;color:var(--ink-soft);font-weight:600;
+  min-width:96px;vertical-align:bottom;
+}
+table.grades thead th .act-name{
+  display:block;max-width:120px;margin:0 auto;line-height:1.25;
+  white-space:normal;
+}
+table.grades thead th.name-col{
+  position:sticky;left:0;top:0;z-index:3;text-align:left;min-width:170px;
+  background:var(--paper-raised);
+}
+table.grades tbody td.name-col{
+  position:sticky;left:0;background:var(--paper-raised);z-index:1;
+  border-right:1px solid var(--line);font-weight:500;font-size:13.5px;
+  padding:10px 12px;white-space:nowrap;
+}
+table.grades tbody tr:nth-child(even) td.name-col{background:#F7F2E8;}
+table.grades tbody tr:nth-child(even) td.cell-wrap{background:#FBF8F2;}
+table.grades tbody td{border-bottom:1px solid var(--line);padding:6px;text-align:center;}
+table.grades tbody tr:last-child td{border-bottom:none;}
+.badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:46px;height:34px;padding:0 10px;border-radius:100px;
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12.5px;
+  cursor:pointer;border:1.5px solid transparent;user-select:none;
+}
+.badge.empty{background:transparent;border:1.5px dashed var(--line-strong);color:var(--ink-faint);font-weight:500;}
+.badge.t4{background:var(--tier4-soft);color:var(--tier4);border-color:#cfe4d8;}
+.badge.t3{background:var(--tier3-soft);color:var(--tier3);border-color:#cfe1ea;}
+.badge.t2{background:var(--tier2-soft);color:var(--tier2);border-color:#e9dcbc;}
+.badge.t1{background:var(--tier1-soft);color:var(--tier1);border-color:#eccdba;}
+.badge.t0{background:#EFEBE0;color:var(--ink-soft);border-color:var(--line);}
+.badge.pending{background:var(--pending-soft);color:var(--pending);border:1.5px dashed #dcb35c;}
+.badge:active{transform:scale(0.93);}
+.no-activities{padding:40px 20px;text-align:center;color:var(--ink-faint);font-size:14px;}
+.no-activities button{margin-top:12px;}
+
+/* ---------- buttons generic ---------- */
+.btn{
+  border-radius:100px;padding:11px 18px;font-size:14px;font-weight:600;
+  border:1px solid var(--line);background:var(--paper-raised);color:var(--ink);cursor:pointer;
+}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+.btn.accent{background:var(--accent,var(--primaria));color:#fff;border-color:transparent;}
+.btn.danger{background:var(--tier1-soft);color:var(--tier1);border-color:#eccdba;}
+.btn.ghost{background:transparent;}
+.btn:active{transform:scale(0.97);}
+.btn.small{padding:7px 13px;font-size:12.5px;}
+.btn:disabled{opacity:.4;}
+
+/* ---------- modal ---------- */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(34,32,27,0.5);
+  display:flex;align-items:flex-end;justify-content:center;z-index:50;
+  animation:fadeIn .15s ease;
+}
+@media (min-width:640px){.modal-backdrop{align-items:center;}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--paper);width:100%;max-width:480px;
+  border-radius:22px 22px 0 0;padding:22px 20px calc(22px + env(safe-area-inset-bottom));
+  max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-modal);
+  animation:slideUp .18s ease;
+}
+@media (min-width:640px){.modal{border-radius:22px;margin-bottom:10vh;}}
+@keyframes slideUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal h3{margin:0 0 4px;font-size:20px;}
+.modal .sub{color:var(--ink-soft);font-size:13.5px;margin:0 0 18px;}
+.modal .field-label{font-size:12px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:16px 0 8px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{
+  padding:9px 15px;border-radius:100px;border:1.5px solid var(--line-strong);
+  background:var(--paper-raised);font-family:'JetBrains Mono',monospace;font-weight:700;
+  font-size:13px;cursor:pointer;color:var(--ink);
+}
+.chip.t4.on,.chip.t4:active{background:var(--tier4);border-color:var(--tier4);color:#fff;}
+.chip.t3.on,.chip.t3:active{background:var(--tier3);border-color:var(--tier3);color:#fff;}
+.chip.t2.on,.chip.t2:active{background:var(--tier2);border-color:var(--tier2);color:#fff;}
+.chip.t1.on,.chip.t1:active{background:var(--tier1);border-color:var(--tier1);color:#fff;}
+.modal input[type=text],.modal textarea{
+  width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--line);
+  font-size:14px;background:var(--paper-raised);font-family:inherit;color:var(--ink);
+}
+.modal textarea{resize:vertical;min-height:64px;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;
+  background:var(--paper-raised);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;margin-top:16px;}
+.toggle-row .lbl{font-size:14px;font-weight:600;}
+.switch{position:relative;width:46px;height:27px;flex:none;}
+.switch input{opacity:0;width:100%;height:100%;position:absolute;margin:0;cursor:pointer;}
+.switch .track{position:absolute;inset:0;background:var(--line-strong);border-radius:100px;transition:.15s;pointer-events:none;}
+.switch .track:before{content:'';position:absolute;width:21px;height:21px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+.switch input:checked + .track{background:var(--pending);}
+.switch input:checked + .track:before{transform:translateX(19px);}
+.modal .actions{display:flex;gap:10px;margin-top:22px;}
+.modal .actions .btn{flex:1;}
+.list-manage{display:flex;flex-direction:column;gap:8px;margin-top:4px;max-height:40vh;overflow-y:auto;}
+.list-row{display:flex;align-items:center;gap:10px;background:var(--paper-raised);
+  border:1px solid var(--line);border-radius:12px;padding:9px 12px;}
+.list-row input{border:none;background:transparent;flex:1;font-size:14px;padding:2px 0;color:var(--ink);}
+.list-row input:focus{outline:none;}
+.list-row .rm{
+  flex:none;width:28px;height:28px;border-radius:50%;border:none;background:var(--tier1-soft);
+  color:var(--tier1);font-size:15px;font-weight:700;cursor:pointer;line-height:1;
+}
+.add-row{display:flex;gap:8px;margin-top:12px;}
+.add-row input{flex:1;}
+
+/* ---------- stats ---------- */
+.stats-section{margin-bottom:26px;}
+.stats-section h3{font-size:16px;margin:0 0 12px;}
+.dist-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.dist-bar-row .code{
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;width:44px;flex:none;text-align:right;
+}
+.dist-bar-track{flex:1;background:#EFEAE0;border-radius:100px;height:14px;overflow:hidden;}
+.dist-bar-fill{height:100%;border-radius:100px;}
+.dist-bar-row .cnt{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-soft);width:26px;flex:none;}
+.student-stat-row{
+  display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line);
+}
+.student-stat-row:last-child{border-bottom:none;}
+.student-stat-row .sname{flex:1;font-size:13.5px;font-weight:500;}
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:24px;}
+.stat-card{background:var(--paper-raised);border:1px solid var(--line);border-radius:14px;padding:14px;}
+.stat-card .num{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;}
+.stat-card .lbl{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--ink-faint);}
+.empty-state .big{font-size:40px;margin-bottom:10px;}
+
+@media (max-width:480px){
+  #app{padding:16px 12px 56px;}
+  .home-hero h1{font-size:30px;}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal-root"></div>
+<script>
+window.SEED_DATA = {"primaria":{"Primer grado":{"alumnos":["ÁLVAREZ, Lucía Violeta","ÁLVAREZ OROZCO, Ian Alejandro","ÁLVAREZ ROSALES, Aylin Estefanía","BRESÁN ACOSTA, Catalina Arya","CALVO GUTIERREZ, Faustina Lucía","FLORIO GENTILE, Giuliana Allegra","GUTIERREZ ROCA, Manuel","VALLE, Agustín"],"bimestres":{"Primer Bimestre":[{"name":"Dibujo Buty","grades":{"ÁLVAREZ, Lucía Violeta":{"v":"B+","p":false},"ÁLVAREZ OROZCO, Ian Alejandro":{"v":"MB","p":false},"ÁLVAREZ ROSALES, Aylin Estefanía":{"v":"MB","p":false},"BRESÁN ACOSTA, Catalina Arya":{"v":"MB+","p":false},"CALVO GUTIERREZ, Faustina Lucía":{"v":"MB+","p":false},"FLORIO GENTILE, Giuliana Allegra":{"v":"MB","p":false},"GUTIERREZ ROCA, Manuel":{"v":"B+","p":false},"VALLE, Agustín":{"v":"MB","p":false}}},{"name":"Act. Páginas 6 y 7","grades":{"ÁLVAREZ, Lucía Violeta":{"v":"B+","p":false},"ÁLVAREZ OROZCO, Ian Alejandro":{"v":"EXC","p":false},"ÁLVAREZ ROSALES, Aylin Estefanía":{"v":"B","p":false},"BRESÁN ACOSTA, Catalina Arya":{"v":"MB+","p":false},"CALVO GUTIERREZ, Faustina Lucía":{"v":"MB","p":false},"FLORIO GENTILE, Giuliana Allegra":{"v":"MB","p":false},"GUTIERREZ ROCA, Manuel":{"v":"MB","p":false},"VALLE, Agustín":{"v":"B+","p":false}}}],"Segundo Bimestre":[],"Tercer Bimestre":[],"Cuarto Bimestre":[]}},"Segundo grado":{"alumnos":["DA SILVA ROMERO, Paulina","DA SILVA ROMERO, Enzo","FERNÁNDEZ MARTINEZ, Sebastian","FEDERICO, Enzo","LEON BRICEÑO, Miranda Alessandra","MARZIALI, Julieta Josefina","Nina, Barrera De Luca"],"bimestres":{"Primer Bimestre":[{"name":"Dibujo Buty","grades":{"DA SILVA ROMERO, Paulina":{"v":"MB","p":false},"DA SILVA ROMERO, Enzo":{"v":"B+","p":false},"FERNÁNDEZ MARTINEZ, Sebastian":{"v":"MB","p":false},"FEDERICO, Enzo":{"v":"B+","p":false},"LEON BRICEÑO, Miranda Alessandra":{"v":"MB+","p":false},"MARZIALI, Julieta Josefina":{"v":"B++","p":false},"Nina, Barrera De Luca":{"v":"EXC","p":false}}}],"Segundo Bimestre":[],"Tercer Bimestre":[],"Cuarto Bimestre":[]}},"Tercer grado":{"alumnos":["AQUILINA, María Felicitas","ARBELO, Santiago Nicolás","BORDAKEVICH, Martina","BORRARO BURTONE, Luz Victoria","CARRAZÁN MORANZONI, Ramiro","ENGEL, Benicio Gael","FRANCO AGUIRRE, Joaquín","GARCÍA, Juan Martin","GENISE, Lourdes","GONZALEZ, Catalina Milagros","INCARBONE URSUA, Enzo Bautista","MOUZO CHERNER, Leire","OLTRABELLA, Facundo","PAPATANASI, Emilio","PEREZ SAAVEDRA, Thiago Alejandro","RUIZ CHAVES, Enrique Joaquín","STORTINI, Genaro","UNCILLA, Benjamín","VALLE, Delfina","VILLALBA BLANCO, Selena","Lilian","PAREDES CUYA, Felipe Moisés"],"bimestres":{"Primer Bimestre":[{"name":"U0-A2: Conociendo a Buty","grades":{"AQUILINA, María Felicitas":{"v":"B+","p":false},"ARBELO, Santiago Nicolás":{"v":"B+","p":false},"BORDAKEVICH, Martina":{"v":"MB","p":false},"BORRARO BURTONE, Luz Victoria":{"v":"MB","p":false},"CARRAZÁN MORANZONI, Ramiro":{"v":"MB","p":false},"ENGEL, Benicio Gael":{"v":"MB","p":false},"FRANCO AGUIRRE, Joaquín":{"v":"B+","p":false},"GARCÍA, Juan Martin":{"v":"MB","p":false},"GENISE, Lourdes":{"v":"B","p":false},"GONZALEZ, Catalina Milagros":{"v":"B+","p":false},"INCARBONE URSUA, Enzo Bautista":{"v":"MB","p":false},"MOUZO CHERNER, Leire":{"v":"B","p":false},"OLTRABELLA, Facundo":{"v":"MB","p":false},"PAPATANASI, Emilio":{"v":"B+","p":false},"PEREZ SAAVEDRA, Thiago Alejandro":{"v":"B+","p":false},"RUIZ CHAVES, Enrique Joaquín":{"v":"MB","p":false},"STORTINI, Genaro":{"v":"B+","p":false},"UNCILLA, Benjamín":{"v":"EXC","p":false},"VALLE, Delfina":{"v":"B+","p":false},"VILLALBA BLANCO, Selena":{"v":null,"p":true},"Lilian":{"v":null,"p":true}}},{"name":"Act. Página 6","grades":{"AQUILINA, María Felicitas":{"v":"MB","p":false},"ARBELO, Santiago Nicolás":{"v":"MB","p":false},"BORDAKEVICH, Martina":{"v":"MB","p":false},"BORRARO BURTONE, Luz Victoria":{"v":null,"p":true},"CARRAZÁN MORANZONI, Ramiro":{"v":"MB","p":false},"ENGEL, Benicio Gael":{"v":"B+","p":false},"FRANCO AGUIRRE, Joaquín":{"v":"B+","p":false},"GARCÍA, Juan Martin":{"v":"MB","p":false},"GENISE, Lourdes":{"v":"MB","p":false},"GONZALEZ, Catalina Milagros":{"v":"MB","p":false},"INCARBONE URSUA, Enzo Bautista":{"v":"B+","p":false},"MOUZO CHERNER, Leire":{"v":"MB","p":false},"OLTRABELLA, Facundo":{"v":"B+","p":false},"PAPATANASI, Emilio":{"v":"MB","p":false},"PEREZ SAAVEDRA, Thiago Alejandro":{"v":"B+","p":false},"RUIZ CHAVES, Enrique Joaquín":{"v":"MB","p":false},"STORTINI, Genaro":{"v":"B+","p":false},"UNCILLA, Benjamín":{"v":null,"p":true},"VALLE, Delfina":{"v":null,"p":true},"VILLALBA BLANCO, Selena":{"v":"B+","p":false},"Lilian":{"v":"MB","p":false}}}],"Segundo Bimestre":[],"Tercer Bimestre":[],"Cuarto Bimestre":[]}},"Cuarto grado":{"alumnos":["ACOSTA, María Lourdes","ANDA BISSO, Alvaro Martín","CAPOBIANCO TOVAR, Salvatore Rafael","CENTURION KOFLER, Felipe Valentino","CENTURION VERA, Rocío Belén","DI GAETANO, Benicio","GODOY CASSANO, Milena Sol","HERNANDEZ RAMOS, Rebeca Belén","LEGUIZAMON FERNANDEZ, Facundo","LOPEZ, Martina Sofía","ORELLANA QUISPE, David","PEDRAZA, Sofía Belén","PACINOTTI, Vita María","PEÑA, Vicente","REY, Simón","ROVIRA VERGARA, Catalina","VISENTINI, Sofía Emma","YANG, Santiago","ROVIRA VERGARA,"],"bimestres":{"Primer Bimestre":[{"name":"Act. Página 8","grades":{"ACOSTA, María Lourdes":{"v":null,"p":true},"ANDA BISSO, Alvaro Martín":{"v":"B+","p":false},"CAPOBIANCO TOVAR, Salvatore Rafael":{"v":"MB","p":false},"CENTURION KOFLER, Felipe Valentino":{"v":"EXC","p":false},"CENTURION VERA, Rocío Belén":{"v":"B+","p":false},"DI GAETANO, Benicio":{"v":"MB","p":false},"GODOY CASSANO, Milena Sol":{"v":"MB","p":false},"HERNANDEZ RAMOS, Rebeca Belén":{"v":"MB","p":false},"LEGUIZAMON FERNANDEZ, Facundo":{"v":"B+","p":false},"LOPEZ, Martina Sofía":{"v":"EXC","p":false},"ORELLANA QUISPE, David":{"v":"B+","p":false},"PEDRAZA, Sofía Belén":{"v":"MB","p":false},"PACINOTTI, Vita María":{"v":"EXC","p":false},"PEÑA, Vicente":{"v":"MB+","p":false},"REY, Simón":{"v":"B+","p":false},"ROVIRA VERGARA, Catalina":{"v":"MB","p":false},"VISENTINI, Sofía Emma":{"v":"MB","p":false},"YANG, Santiago":{"v":"B+","p":false}}},{"name":"Act. \"Volvemos a mirar por dentro\"","grades":{"ACOSTA, María Lourdes":{"v":null,"p":true},"ANDA BISSO, Alvaro Martín":{"v":"B+","p":false},"CAPOBIANCO TOVAR, Salvatore Rafael":{"v":null,"p":true,"n":"REHACER"},"CENTURION KOFLER, Felipe Valentino":{"v":null,"p":true},"CENTURION VERA, Rocío Belén":{"v":"MB","p":false},"DI GAETANO, Benicio":{"v":"MB","p":false},"GODOY CASSANO, Milena Sol":{"v":"MB","p":false},"HERNANDEZ RAMOS, Rebeca Belén":{"v":"B+","p":false},"LEGUIZAMON FERNANDEZ, Facundo":{"v":"B+","p":false},"LOPEZ, Martina Sofía":{"v":"B+","p":false},"ORELLANA QUISPE, David":{"v":null,"p":true},"PEDRAZA, Sofía Belén":{"v":"EXC","p":false},"PACINOTTI, Vita María":{"v":"MB","p":false},"PEÑA, Vicente":{"v":"MB","p":false},"REY, Simón":{"v":"B+","p":false},"ROVIRA VERGARA, Catalina":{"v":"B","p":false},"VISENTINI, Sofía Emma":{"v":"MB","p":false},"YANG, Santiago":{"v":null,"p":true}}}],"Segundo Bimestre":[],"Tercer Bimestre":[],"Cuarto Bimestre":[]}},"Quinto grado":{"alumnos":["BENCHETRIT, Mirko","CEVALLOS CHUQUICUSMA, Valentino Gabriel","DI GAETANO, Bianca","DIMITRI, Tobías Alejandro","DOMINGUEZ, Lautaro Gael","ESPÍNOLA ALDANA, Antonio Elias","FERNANDEZ GAUNA, Lautaro","GRITTA, Francesca","GUERRA, María Inés","KOFLER, Victoria Lucía","MASTROLONARDO ALVAREZ, Benita","MEDINA OLEA, Guadalupe Sofía","MESSINA, Morena Bianca","PERALTA CRIADO, Antonella Yasmín","PERICHON PERTINO, Salvador","POLITE LUCCA, Agustina","RACEDO, León","REQUENA GONZALEZ, Estefanía","SALGUERO, Juan Ignacio","SPOTTI, Tomás Pedro","USTARIZ BOGGIANO, Ezequiel Imanol"],"bimestres":{"Primer Bimestre":[{"name":"Actividad A1-U0","grades":{"BENCHETRIT, Mirko":{"v":"A","p":false},"CEVALLOS CHUQUICUSMA, Valentino Gabriel":{"v":null,"p":true,"n":"PEDIR PROX CLASE"},"DI GAETANO, Bianca":{"v":"A","p":false},"DIMITRI, Tobías Alejandro":{"v":"A","p":false},"DOMINGUEZ, Lautaro Gael":{"v":null,"p":true,"n":"ENTREGAR"},"ESPÍNOLA ALDANA, Antonio Elias":{"v":null,"p":true,"n":"PEDIR PROX CLASE"},"FERNANDEZ GAUNA, Lautaro":{"v":"A","p":false},"GRITTA, Francesca":{"v":"EXC","p":false},"GUERRA, María Inés":{"v":"A","p":false},"KOFLER, Victoria Lucía":{"v":"S/A","p":false},"MASTROLONARDO ALVAREZ, Benita":{"v":"A","p":false},"MEDINA OLEA, Guadalupe Sofía":{"v":"EXC","p":false},"MESSINA, Morena Bianca":{"v":"S/A","p":false},"PERALTA CRIADO, Antonella Yasmín":{"v":"A","p":false},"PERICHON PERTINO, Salvador":{"v":"A","p":false},"POLITE LUCCA, Agustina":{"v":"A","p":false},"RACEDO, León":{"v":"S","p":false},"REQUENA GONZALEZ, Estefanía":{"v":"A","p":false},"SALGUERO, Juan Ignacio":{"v":"S","p":false},"SPOTTI, Tomás Pedro":{"v":"A","p":false},"USTARIZ BOGGIANO, Ezequiel Imanol":{"v":"S","p":false}}}],"Segundo Bimestre":[],"Tercer Bimestre":[],"Cuarto Bimestre":[]}},"Sexto grado":{"alumnos":["CASADO, Kiara","DA SILVA ROMERO, Nathalia Paola","DE LA TORRE CANDA, Benjamín Matías","FASCIOLO, Giuliana","HERRERA LUNA, Santiago Miguel","LUPPO, Violeta Abril","MAPELLI VIDAL, Indiana","MOLINAS DEGIOVANNI, Valentino Killian","PAPATANASI, Juliana","PUOLI, Bautista Francisco","PUPPO SUERO, Francesca","RODRIGUEZ, Agustina","VEGA, Leandro"],"bimestres":{"Primer Bimestre":[{"name":"Actividad A1-U0","grades":{"CASADO, Kiara":{"v":"A","p":false},"DA SILVA ROMERO, Nathalia Paola":{"v":"S","p":false},"DE LA TORRE CANDA, Benjamín Matías":{"v":"S/A","p":false},"FASCIOLO, Giuliana":{"v":"A","p":false},"HERRERA LUNA, Santiago Miguel":{"v":"S","p":false},"LUPPO, Violeta Abril":{"v":"A","p":false},"MAPELLI VIDAL, Indiana":{"v":"A","p":false},"MOLINAS DEGIOVANNI, Valentino Killian":{"v":null,"p":true,"n":"PEDIRLO PROX CLASE"},"PAPATANASI, Juliana":{"v":"A","p":false},"PUOLI, Bautista Francisco":{"v":"A","p":false},"PUPPO SUERO, Francesca":{"v":null,"p":true,"n":"PEDIRLO PROX CLASE"},"RODRIGUEZ, Agustina":{"v":"A","p":false},"VEGA, Leandro":{"v":"S/A","p":false}}}],"Segundo Bimestre":[],"Tercer Bimestre":[],"Cuarto Bimestre":[]}},"Septimo grado":{"alumnos":["ACEVEDO, Simón","ÁLVAREZ, Ignacio","AQUILINA, Bastián Fernando","BALBI, Delfina","BORDAKEVICH, Joaquín","CAIRONE ROMANO, Dante","CALVO GUTIERREZ, Sofía Abril","CAMARASA, Felipe","CARRIZO LESCANO, Serena Victoria","CATALDO, Chiara","COLUCCIA BERNÁRDEZ, María Emilia","D´ANGELO VACCARO, Emma Francesca","DELLISANTI POMA, Bianca","DI FILIPPO PETTOROSSI, Gino","DUARTE PADRON, Julieta","ESCALONA GONCALVES, Andrea Valentina","FRANCESE, Justina María","GARCIA, Joaquín Lisandro","GEORGIETT, Constantino Daniel","GUERRA, Lourdes","MARAZZA LARRANDART, Jazmín","MAURO, Gonzalo Ezequiel","NIEVES PERINI, Bautista","NOVOA GIGENA, Agustín Ezequiel","OLIVAR LEON, Victoria Alejandra","OLTRABELLA, Juan Martín","PERAZA GALEA, Juliette Antonieta","SÁNCHEZ, León Bautista","SILVERIO REYES, Ian Franco","TRAVAGLINI, Tiziano Felipe","VILAS URSUA, Bruno"],"bimestres":{"Primer Bimestre":[{"name":"Act. Pág 39. Punto 2","grades":{"ACEVEDO, Simón":{"v":null,"p":true},"ÁLVAREZ, Ignacio":{"v":"S/A","p":false},"AQUILINA, Bastián Fernando":{"v":"S/A","p":false},"BALBI, Delfina":{"v":"S/A","p":false},"BORDAKEVICH, Joaquín":{"v":"S/A","p":false},"CAIRONE ROMANO, Dante":{"v":null,"p":true},"CALVO GUTIERREZ, Sofía Abril":{"v":"A/D","p":false},"CAMARASA, Felipe":{"v":"S","p":false},"CARRIZO LESCANO, Serena Victoria":{"v":"D","p":false},"CATALDO, Chiara":{"v":"A","p":false},"COLUCCIA BERNÁRDEZ, María Emilia":{"v":"S/A","p":false},"D´ANGELO VACCARO, Emma Francesca":{"v":"A","p":false},"DELLISANTI POMA, Bianca":{"v":"A","p":false},"DI FILIPPO PETTOROSSI, Gino":{"v":"S","p":false},"DUARTE PADRON, Julieta":{"v":"D","p":false},"ESCALONA GONCALVES, Andrea Valentina":{"v":"A","p":false},"FRANCESE, Justina María":{"v":"A","p":false},"GARCIA, Joaquín Lisandro":{"v":"A","p":false},"GEORGIETT, Constantino Daniel":{"v":"A","p":false},"GUERRA, Lourdes":{"v":"A","p":false},"MARAZZA LARRANDART, Jazmín":{"v":"A/D","p":false},"MAURO, Gonzalo Ezequiel":{"v":"A","p":false},"NIEVES PERINI, Bautista":{"v":null,"p":true},"NOVOA GIGENA, Agustín Ezequiel":{"v":"S","p":false},"OLIVAR LEON, Victoria Alejandra":{"v":"A/D","p":false},"OLTRABELLA, Juan Martín":{"v":"S/A","p":false},"PERAZA GALEA, Juliette Antonieta":{"v":"A","p":false},"SÁNCHEZ, León Bautista":{"v":"A","p":false},"SILVERIO REYES, Ian Franco":{"v":null,"p":true},"TRAVAGLINI, Tiziano Felipe":{"v":null,"p":true},"VILAS URSUA, Bruno":{"v":"D","p":false}}}],"Segundo Bimestre":[],"Tercer Bimestre":[],"Cuarto Bimestre":[]}}},"secundaria":{"1° año":{"alumnos":["ARANGIO FRIXIONE Lucía María","ASTA ALASTRE Jonathan Alessandro","BASSO ZUNINO María Julieta","BEDETTI Emilia","BEVACQUA Jazmín Francesca","BRATIG Esmeralda","CENTURIÓN KOFLER Camila Fernanda","DUARTE SAENZ Luciana Pilar","FEDERICO Giovanni","FLEMING Ingrid","FORMOSO MACIAS Victoria","GUZMAN DAVALOS Esmeralda Vanina","LOMBARDI Francesca Oriana","MAUAS Luciano Sebastián","ONZARI Guadalupe Azul","POLITE LUCCA Josefina","REQUENA GONZALEZ Emilia","RODRÍGUEZ PLANCHART Angel de Jesús"],"bimestres":{"Primer Bimestre":[],"Segundo Bimestre":[],"Tercer Bimestre":[],"Cuarto Bimestre":[]}},"2° año":{"alumnos":["ÁLVAREZ BRITO, Crysmar Antonella","BALARI, Juan Cruz","BALARI, Mía Rocío","BAS FRAGALÁ, Guadalupe","CABAÑES, Sofía","COLUCCIA BERNÁRDES, Sofía Lara","CHELALA, Luis Humberto","DIMOULAS, Máxima","DRAZER SORDI, Alma","ENGLER, Amanda Gabriela","ESPINOSA, Lara Pilar","FERNÁNDEZ GAUNA, Melina","FONSECA PRADA, Juana","GARCÍA SANCHEZ, Matías Gerónimo","GEORGIETT, Liz Victoria","GÓNGORA, Marcos Pier Gael","GONZALEZ, Agustín","GUTIERREZ ROCA, Rosario","HERRERA LUNA, Andrea Camila","HERRERA HERRERA, Sheryl Stefanía","LADISLAO, Nicolás Guillermo","MANFREDINI DEGUI, Joaquina","MANSILLA, Pedro","MARTÍNEZ ARÉVALO, Bautista","NOVOA GIGENA, Santiago","PIETRAGALLA, Isabella","PRIMAVERA, Ramiro","QUIROGA DI LORENZI, Carolina","RUGGERI, Karen","ZOTELO, Santiago Renzo"],"bimestres":{"Primer Bimestre":[],"Segundo Bimestre":[],"Tercer Bimestre":[],"Cuarto Bimestre":[]}},"3° año":{"alumnos":["ACOSTA, Juan Cruz","BACIGALUPE, Rosario","BENITEZ AGUINALDE, Victoria Valentina","BUSTO JACOD, Rocío Micaela","DE LA TORRE CANDA, Juan Ignacio","FAYAD, Delfina","HERRERA, Juan Cruz","JANCIC, Sofía","LEÓN BRICEÑO, Katherine Alessandra","LEON SAONA, Sebastián","MINOTTI ALVAREZ, Martina Jazmín","NIEVES PERINI, Valentín","PANZERINI, Ramiro","PUPPO SUERO, Genaro","RAVERA, Santiago","SILVERIO REYES, Enzo Martín","TEIXIDO, Evan","UNCILLA, Santino","VISENTINI, Federico Andrés","YANG, Antonio"],"bimestres":{"Primer Bimestre":[],"Segundo Bimestre":[],"Tercer Bimestre":[],"Cuarto Bimestre":[]}},"4° año":{"alumnos":["AREAN MARRA Gael","BARBONA Victoria","CAMARASA Simona","COLUCCIA BERNARDEZ Mateo","DELISANTI POMA Chiara","GARCÍA HADAD Antonela","GRIMAUX Marcos","GRIMAUX Rómulo","GUERRERO VIVAS Sofia","LA GIGLIA BOGGIANO Juan Cruz","LOMBARDI ROMANO Ulysses","MASCARI Tiziano","PEDERNERA Lara","ROSITO Catalina"],"bimestres":{"Primer Bimestre":[{"name":"Actividad en Clase - DER","grades":{"AREAN MARRA Gael":{"v":"A","p":false},"BARBONA Victoria":{"v":"S","p":true},"CAMARASA Simona":{"v":"A+","p":false},"COLUCCIA BERNARDEZ Mateo":{"v":"A","p":false},"DELISANTI POMA Chiara":{"v":"A","p":false},"GARCÍA HADAD Antonela":{"v":"A/D","p":false},"GRIMAUX Marcos":{"v":"S/S-","p":false},"GRIMAUX Rómulo":{"v":null,"p":true,"n":"CORREGIR"},"GUERRERO VIVAS Sofia":{"v":"A+","p":false},"LA GIGLIA BOGGIANO Juan Cruz":{"v":"S","p":false},"LOMBARDI ROMANO Ulysses":{"v":"S","p":false},"MASCARI Tiziano":{"v":"S","p":false},"PEDERNERA Lara":{"v":"A/D","p":false},"ROSITO Catalina":{"v":"A","p":false}}},{"name":"DER en Compu - 1","grades":{"AREAN MARRA Gael":{"v":null,"p":false},"BARBONA Victoria":{"v":"EP","p":true},"CAMARASA Simona":{"v":null,"p":false},"COLUCCIA BERNARDEZ Mateo":{"v":null,"p":false},"DELISANTI POMA Chiara":{"v":null,"p":false},"GARCÍA HADAD Antonela":{"v":null,"p":false},"GRIMAUX Marcos":{"v":null,"p":false},"GRIMAUX Rómulo":{"v":null,"p":false},"GUERRERO VIVAS Sofia":{"v":null,"p":false},"LA GIGLIA BOGGIANO Juan Cruz":{"v":null,"p":false},"LOMBARDI ROMANO Ulysses":{"v":null,"p":false},"MASCARI Tiziano":{"v":"EP","p":true},"PEDERNERA Lara":{"v":null,"p":false},"ROSITO Catalina":{"v":null,"p":false}}}],"Segundo Bimestre":[{"name":"Examen BDD N° 1","grades":{"AREAN MARRA Gael":{"v":"A","p":false},"BARBONA Victoria":{"v":"S","p":false},"CAMARASA Simona":{"v":"D","p":false},"COLUCCIA BERNARDEZ Mateo":{"v":"A","p":false},"DELISANTI POMA Chiara":{"v":"A","p":false},"GARCÍA HADAD Antonela":{"v":"A","p":false},"GRIMAUX Marcos":{"v":"S","p":false},"GRIMAUX Rómulo":{"v":"EP","p":true},"GUERRERO VIVAS Sofia":{"v":"A","p":false},"LA GIGLIA BOGGIANO Juan Cruz":{"v":"A","p":false},"LOMBARDI ROMANO Ulysses":{"v":"D","p":false},"MASCARI Tiziano":{"v":"S","p":false},"PEDERNERA Lara":{"v":"A","p":false},"ROSITO Catalina":{"v":"A","p":false}}},{"name":"Guía 1 - Alter Table","grades":{"AREAN MARRA Gael":{"v":"A","p":false},"BARBONA Victoria":{"v":null,"p":false},"CAMARASA Simona":{"v":"A","p":false},"COLUCCIA BERNARDEZ Mateo":{"v":"A","p":false},"DELISANTI POMA Chiara":{"v":"A","p":false},"GARCÍA HADAD Antonela":{"v":"A","p":false},"GRIMAUX Marcos":{"v":null,"p":false},"GRIMAUX Rómulo":{"v":null,"p":false},"GUERRERO VIVAS Sofia":{"v":"A","p":false},"LA GIGLIA BOGGIANO Juan Cruz":{"v":null,"p":false},"LOMBARDI ROMANO Ulysses":{"v":null,"p":false},"MASCARI Tiziano":{"v":null,"p":false},"PEDERNERA Lara":{"v":"A","p":false},"ROSITO Catalina":{"v":"A","p":false}}}],"Tercer Bimestre":[],"Cuarto Bimestre":[]}},"5° año":{"alumnos":["ABALLAY Matias Martin","BASSO ZUNINO María Eugenia","CAMPESI BIANCHI Matías","CAMURATI Delfina","CASTRO Emiliano","DE LA TORRE CANDA Bautista","DÍAZ GONZÁLEZ Tatiana Belén","DUARTE PADRÓN Mathias","ENGLER Dafne Eleonora","GAMARRA GASSER Marianela","GENISE Felipe","GRITTA FIDALGO Olivia","JANCIC ANTELO Emma","LAMARQUE SÁENZ Débora Sofía","MENDOZA CARRIZO Lautaro","PEZZELLA Gennaro","PIETRAGALLA Gina","QUIROGA DELORENZI Victoria","ROJAS Morena","SAVANT Bautista Rene","SEMISA Bautista","SOSA Melody Antonella","VERDI Lourdes"],"bimestres":{"Primer Bimestre":[{"name":"Participación en Clase","grades":{"ABALLAY Matias Martin":{"v":"EP","p":false},"BASSO ZUNINO María Eugenia":{"v":null,"p":false},"CAMPESI BIANCHI Matías":{"v":"EP","p":false},"CAMURATI Delfina":{"v":null,"p":false},"CASTRO Emiliano":{"v":"EP","p":false},"DE LA TORRE CANDA Bautista":{"v":null,"p":false},"DÍAZ GONZÁLEZ Tatiana Belén":{"v":null,"p":false},"DUARTE PADRÓN Mathias":{"v":null,"p":false},"ENGLER Dafne Eleonora":{"v":null,"p":false},"GAMARRA GASSER Marianela":{"v":null,"p":false},"GENISE Felipe":{"v":"EP","p":false},"GRITTA FIDALGO Olivia":{"v":null,"p":false},"JANCIC ANTELO Emma":{"v":null,"p":false},"LAMARQUE SÁENZ Débora Sofía":{"v":null,"p":false},"MENDOZA CARRIZO Lautaro":{"v":"S","p":false},"PEZZELLA Gennaro":{"v":"S","p":false},"PIETRAGALLA Gina":{"v":"EP","p":false},"QUIROGA DELORENZI Victoria":{"v":null,"p":false},"ROJAS Morena":{"v":null,"p":false},"SAVANT Bautista Rene":{"v":"EP","p":false},"SEMISA Bautista":{"v":"EP","p":false},"SOSA Melody Antonella":{"v":null,"p":false},"VERDI Lourdes":{"v":null,"p":false}}},{"name":"Conducta","grades":{"ABALLAY Matias Martin":{"v":"EP","p":false},"BASSO ZUNINO María Eugenia":{"v":null,"p":false},"CAMPESI BIANCHI Matías":{"v":"EP","p":false},"CAMURATI Delfina":{"v":null,"p":false},"CASTRO Emiliano":{"v":"EP","p":false},"DE LA TORRE CANDA Bautista":{"v":null,"p":false},"DÍAZ GONZÁLEZ Tatiana Belén":{"v":null,"p":false},"DUARTE PADRÓN Mathias":{"v":null,"p":false},"ENGLER Dafne Eleonora":{"v":null,"p":false},"GAMARRA GASSER Marianela":{"v":null,"p":false},"GENISE Felipe":{"v":"EP","p":false},"GRITTA FIDALGO Olivia":{"v":null,"p":false},"JANCIC ANTELO Emma":{"v":null,"p":false},"LAMARQUE SÁENZ Débora Sofía":{"v":null,"p":false},"MENDOZA CARRIZO Lautaro":{"v":null,"p":false},"PEZZELLA Gennaro":{"v":null,"p":false},"PIETRAGALLA Gina":{"v":"EP","p":false},"QUIROGA DELORENZI Victoria":{"v":null,"p":false},"ROJAS Morena":{"v":null,"p":false},"SAVANT Bautista Rene":{"v":"EP","p":false},"SEMISA Bautista":{"v":"EP","p":false},"SOSA Melody Antonella":{"v":null,"p":false},"VERDI Lourdes":{"v":null,"p":false}}}],"Segundo Bimestre":[{"name":"Act. 1 -  Practica Evaluacion","grades":{"ABALLAY Matias Martin":{"v":"A","p":false},"BASSO ZUNINO María Eugenia":{"v":"D","p":false},"CAMPESI BIANCHI Matías":{"v":"A","p":false},"CAMURATI Delfina":{"v":"D","p":false},"CASTRO Emiliano":{"v":"EP","p":false},"DE LA TORRE CANDA Bautista":{"v":"A","p":false},"DÍAZ GONZÁLEZ Tatiana Belén":{"v":"A","p":false},"DUARTE PADRÓN Mathias":{"v":"A","p":false},"ENGLER Dafne Eleonora":{"v":"D","p":false},"GAMARRA GASSER Marianela":{"v":"D","p":false},"GENISE Felipe":{"v":"S","p":false},"GRITTA FIDALGO Olivia":{"v":"D","p":false},"JANCIC ANTELO Emma":{"v":"D","p":false},"LAMARQUE SÁENZ Débora Sofía":{"v":"D","p":false},"MENDOZA CARRIZO Lautaro":{"v":null,"p":true},"PEZZELLA Gennaro":{"v":"A","p":false},"PIETRAGALLA Gina":{"v":"EP","p":false},"QUIROGA DELORENZI Victoria":{"v":"A","p":false},"ROJAS Morena":{"v":"S","p":false},"SAVANT Bautista Rene":{"v":"EP","p":false},"SEMISA Bautista":{"v":"EP","p":false},"SOSA Melody Antonella":{"v":"A","p":false},"VERDI Lourdes":{"v":null,"p":true}}},{"name":"Act. 2 -  Practica Evaluacion","grades":{"ABALLAY Matias Martin":{"v":"A","p":false},"BASSO ZUNINO María Eugenia":{"v":"D","p":false},"CAMPESI BIANCHI Matías":{"v":"A","p":false},"CAMURATI Delfina":{"v":"D","p":false},"CASTRO Emiliano":{"v":"EP","p":false},"DE LA TORRE CANDA Bautista":{"v":"A","p":false},"DÍAZ GONZÁLEZ Tatiana Belén":{"v":"A","p":false},"DUARTE PADRÓN Mathias":{"v":"D","p":false},"ENGLER Dafne Eleonora":{"v":"A","p":false},"GAMARRA GASSER Marianela":{"v":"D","p":false},"GENISE Felipe":{"v":"S","p":false},"GRITTA FIDALGO Olivia":{"v":"D","p":false},"JANCIC ANTELO Emma":{"v":"D","p":false},"LAMARQUE SÁENZ Débora Sofía":{"v":"A","p":false},"MENDOZA CARRIZO Lautaro":{"v":null,"p":true},"PEZZELLA Gennaro":{"v":"A","p":false},"PIETRAGALLA Gina":{"v":"EP","p":false},"QUIROGA DELORENZI Victoria":{"v":"A","p":false},"ROJAS Morena":{"v":"S","p":false},"SAVANT Bautista Rene":{"v":"EP","p":false},"SEMISA Bautista":{"v":"EP","p":false},"SOSA Melody Antonella":{"v":"A","p":false},"VERDI Lourdes":{"v":null,"p":true}}},{"name":"Act. 3 - Práctica Evaluación","grades":{"ABALLAY Matias Martin":{"v":null,"p":false},"BASSO ZUNINO María Eugenia":{"v":null,"p":false},"CAMPESI BIANCHI Matías":{"v":null,"p":false},"CAMURATI Delfina":{"v":null,"p":false},"CASTRO Emiliano":{"v":null,"p":false},"DE LA TORRE CANDA Bautista":{"v":null,"p":false},"DÍAZ GONZÁLEZ Tatiana Belén":{"v":null,"p":false},"DUARTE PADRÓN Mathias":{"v":null,"p":false},"ENGLER Dafne Eleonora":{"v":null,"p":false},"GAMARRA GASSER Marianela":{"v":null,"p":true},"GENISE Felipe":{"v":null,"p":false},"GRITTA FIDALGO Olivia":{"v":null,"p":false},"JANCIC ANTELO Emma":{"v":null,"p":false},"LAMARQUE SÁENZ Débora Sofía":{"v":null,"p":false},"MENDOZA CARRIZO Lautaro":{"v":null,"p":true},"PEZZELLA Gennaro":{"v":null,"p":false},"PIETRAGALLA Gina":{"v":"EP","p":false},"QUIROGA DELORENZI Victoria":{"v":null,"p":false},"ROJAS Morena":{"v":null,"p":false},"SAVANT Bautista Rene":{"v":null,"p":false},"SEMISA Bautista":{"v":"EP","p":false},"SOSA Melody Antonella":{"v":null,"p":false},"VERDI Lourdes":{"v":null,"p":true}}},{"name":"Act. 4 - Parte Práctica para Examen","grades":{"ABALLAY Matias Martin":{"v":null,"p":false},"BASSO ZUNINO María Eugenia":{"v":null,"p":false},"CAMPESI BIANCHI Matías":{"v":null,"p":false},"CAMURATI Delfina":{"v":null,"p":false},"CASTRO Emiliano":{"v":null,"p":true},"DE LA TORRE CANDA Bautista":{"v":null,"p":true},"DÍAZ GONZÁLEZ Tatiana Belén":{"v":null,"p":false},"DUARTE PADRÓN Mathias":{"v":null,"p":false},"ENGLER Dafne Eleonora":{"v":null,"p":false},"GAMARRA GASSER Marianela":{"v":null,"p":true},"GENISE Felipe":{"v":null,"p":false},"GRITTA FIDALGO Olivia":{"v":null,"p":false},"JANCIC ANTELO Emma":{"v":null,"p":true},"LAMARQUE SÁENZ Débora Sofía":{"v":null,"p":false},"MENDOZA CARRIZO Lautaro":{"v":null,"p":true},"PEZZELLA Gennaro":{"v":null,"p":false},"PIETRAGALLA Gina":{"v":null,"p":true},"QUIROGA DELORENZI Victoria":{"v":null,"p":true},"ROJAS Morena":{"v":null,"p":false},"SAVANT Bautista Rene":{"v":null,"p":true},"SEMISA Bautista":{"v":null,"p":true},"SOSA Melody Antonella":{"v":null,"p":false},"VERDI Lourdes":{"v":null,"p":true}}},{"name":"Evaluación N° 1","grades":{"ABALLAY Matias Martin":{"v":null,"p":false},"BASSO ZUNINO María Eugenia":{"v":null,"p":false},"CAMPESI BIANCHI Matías":{"v":null,"p":false},"CAMURATI Delfina":{"v":null,"p":false},"CASTRO Emiliano":{"v":null,"p":false},"DE LA TORRE CANDA Bautista":{"v":null,"p":false},"DÍAZ GONZÁLEZ Tatiana Belén":{"v":null,"p":false},"DUARTE PADRÓN Mathias":{"v":"A+","p":false},"ENGLER Dafne Eleonora":{"v":null,"p":false},"GAMARRA GASSER Marianela":{"v":null,"p":false},"GENISE Felipe":{"v":null,"p":false},"GRITTA FIDALGO Olivia":{"v":null,"p":false},"JANCIC ANTELO Emma":{"v":null,"p":false},"LAMARQUE SÁENZ Débora Sofía":{"v":null,"p":false},"MENDOZA CARRIZO Lautaro":{"v":null,"p":false},"PEZZELLA Gennaro":{"v":null,"p":false},"PIETRAGALLA Gina":{"v":null,"p":false},"QUIROGA DELORENZI Victoria":{"v":null,"p":false},"ROJAS Morena":{"v":null,"p":false},"SAVANT Bautista Rene":{"v":null,"p":false},"SEMISA Bautista":{"v":null,"p":false},"SOSA Melody Antonella":{"v":null,"p":false},"VERDI Lourdes":{"v":null,"p":false}}}],"Tercer Bimestre":[],"Cuarto Bimestre":[]}}}};
+</script>
+<script>
+/* ===================== Cuaderno de Notas — lógica de la app ===================== */
+(function(){
+"use strict";
+
+var STORAGE_KEY = "cuaderno_notas_db_v2";
+var BIMESTRES = ["Primer Bimestre","Segundo Bimestre","Tercer Bimestre","Cuarto Bimestre"];
+
+var NIVEL_LABEL = { primaria: "Primaria", secundaria: "Secundaria" };
+var NIVEL_ACCENT = { primaria: "var(--primaria)", secundaria: "var(--secundaria)" };
+
+/* ---------- escalas de calificación sugeridas (chips rápidos) ---------- */
+var SCALES = {
+  secundaria: [
+    {code:"EP", label:"En Proceso", tier:1},
+    {code:"S",  label:"Suficiente", tier:2},
+    {code:"A",  label:"Avanzado",   tier:3},
+    {code:"D",  label:"Destacado",  tier:4}
+  ],
+  primaria_nueva: [
+    {code:"EP", label:"En Proceso", tier:1},
+    {code:"S",  label:"Suficiente", tier:2},
+    {code:"A",  label:"Avanzado",   tier:3},
+    {code:"D",  label:"Destacado",  tier:4}
+  ],
+  primaria_clasica: [
+    {code:"R",   label:"Regular",     tier:1},
+    {code:"B-",  label:"Bueno -",     tier:2},
+    {code:"B",   label:"Bueno",       tier:2},
+    {code:"B+",  label:"Bueno +",     tier:2},
+    {code:"MB-", label:"Muy Bueno -", tier:3},
+    {code:"MB",  label:"Muy Bueno",   tier:3},
+    {code:"MB+", label:"Muy Bueno +", tier:3},
+    {code:"EXC", label:"Excelente",   tier:4}
+  ]
+};
+
+/* ---------- estado global ---------- */
+var DB = null;
+var state = { view:"home", nivel:null, curso:null, bimestreIdx:0, filtro:"", statsBimestreIdx:"todos" };
+var pendingCellCtx = null; // {nivel,curso,bimestreLabel,actIdx,alumno}
+
+/* ===================== persistencia ===================== */
+function loadDB(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ console.warn("No se pudo leer localStorage", e); }
+  // primera carga: semilla desde datos importados de los Excel originales
+  return JSON.parse(JSON.stringify(window.SEED_DATA));
+}
+function saveDB(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }
+  catch(e){ alert("No se pudo guardar (almacenamiento lleno o bloqueado)."); }
+}
+
+/* ===================== utilidades de datos ===================== */
+function getCurso(nivel, curso){ return DB[nivel] && DB[nivel][curso]; }
+function ensureBimestre(cursoObj, label){
+  if(!cursoObj.bimestres[label]) cursoObj.bimestres[label] = [];
+  return cursoObj.bimestres[label];
+}
+function tierOf(raw){
+  if(raw===null || raw===undefined) return null;
+  var s = String(raw).trim().toUpperCase();
+  if(!s) return null;
+  if(s.indexOf("EXC")>=0 || s==="D" || s.slice(0,1)==="D" && (s==="D+"||s==="D-")) return 4;
+  if(s.indexOf("MB")>=0 || s==="A" || s==="A+" || s==="A-" || s==="A/D" || s==="D/A") return 3;
+  if(s==="B" || s==="B+" || s==="B-" || s==="S" || s==="S+" || s==="S-" || s==="S/A") return 2;
+  if(s==="R" || s==="EP") return 1;
+  return 0; // texto libre no reconocido
+}
+function tierClass(t){
+  if(t===null||t===undefined) return "empty";
+  return "t"+t;
+}
+function countPendientesCurso(cursoObj){
+  var n=0;
+  BIMESTRES.forEach(function(b){
+    (cursoObj.bimestres[b]||[]).forEach(function(act){
+      Object.keys(act.grades||{}).forEach(function(al){
+        if(act.grades[al].p) n++;
+      });
+    });
+  });
+  return n;
+}
+function escapeHtml(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+
+/* ===================== render root ===================== */
+var app = document.getElementById("app");
+
+function render(){
+  document.documentElement.style.setProperty("--accent", state.nivel ? NIVEL_ACCENT[state.nivel] : "var(--primaria)");
+  if(state.view==="home") return renderHome();
+  if(state.view==="nivel") return renderNivel();
+  if(state.view==="curso") return renderCurso();
+  if(state.view==="stats") return renderStats();
+}
+
+/* ---------- HOME ---------- */
+function renderHome(){
+  var totalCursosP = Object.keys(DB.primaria).length;
+  var totalCursosS = Object.keys(DB.secundaria).length;
+  var pendP=0, pendS=0;
+  Object.values(DB.primaria).forEach(function(c){ pendP += countPendientesCurso(c); });
+  Object.values(DB.secundaria).forEach(function(c){ pendS += countPendientesCurso(c); });
+
+  app.innerHTML =
+  '<div class="home-hero">'+
+    '<div class="eyebrow">Ciclo lectivo 2026</div>'+
+    '<h1>Cuaderno de Notas</h1>'+
+    '<p>Registro de calificaciones por curso y bimestre. Todo se guarda en este dispositivo.</p>'+
+  '</div>'+
+  '<div class="nivel-grid">'+
+    nivelCard("primaria", "Nivel", "Primaria", totalCursosP+" cursos", pendP)+
+    nivelCard("secundaria", "Nivel", "Secundaria", totalCursosS+" cursos", pendS)+
+  '</div>'+
+  '<div class="toolbar" style="margin-top:24px;">'+
+    tbtn("export-all","⬇","Exportar todo")+
+    tbtn("import-all","⬆","Importar")+
+  '</div>';
+
+  bindHomeEvents();
+}
+function nivelCard(nivel, tag, title, meta, pend){
+  return '<button class="nivel-card '+nivel+'" data-action="goto-nivel" data-nivel="'+nivel+'">'+
+    '<div class="tab-mark"></div>'+
+    '<div class="tag">'+tag+'</div>'+
+    '<h2>'+title+'</h2>'+
+    '<div class="meta">'+meta+(pend?' · '+pend+' pendientes':'')+'</div>'+
+  '</button>';
+}
+function tbtn(action, icon, label, extra){
+  return '<button class="tbtn" data-action="'+action+'"'+(extra||'')+'><span class="ic">'+icon+'</span>'+label+'</button>';
+}
+function bindHomeEvents(){
+  app.querySelectorAll('[data-action="goto-nivel"]').forEach(function(el){
+    el.onclick=function(){ state.nivel=el.dataset.nivel; state.view="nivel"; render(); };
+  });
+  app.querySelector('[data-action="export-all"]').onclick = exportAll;
+  app.querySelector('[data-action="import-all"]').onclick = function(){ triggerImport(null); };
+}
+
+/* ---------- NIVEL ---------- */
+function renderNivel(){
+  var nivel = state.nivel;
+  var cursos = DB[nivel];
+  var names = Object.keys(cursos);
+
+  app.innerHTML =
+  topbar({back:"home", eyebrow:"Nivel", title:NIVEL_LABEL[nivel], pend:null})+
+  '<div class="curso-grid">'+
+    names.map(function(name){
+      var c = cursos[name];
+      var pend = countPendientesCurso(c);
+      return '<button class="curso-card" data-action="goto-curso" data-curso="'+escapeHtml(name)+'">'+
+        '<div class="top-row"><h3>'+escapeHtml(name)+'</h3>'+(pend?'<span class="pend-badge">'+pend+'</span>':'')+'</div>'+
+        '<div class="count">'+c.alumnos.length+' alumnos</div>'+
+      '</button>';
+    }).join("")+
+    '<button class="add-curso-card" data-action="add-curso">+ Agregar curso</button>'+
+  '</div>';
+
+  app.querySelector('[data-action="back"]').onclick = function(){ state.view="home"; render(); };
+  app.querySelectorAll('[data-action="goto-curso"]').forEach(function(el){
+    el.onclick=function(){ state.curso=el.dataset.curso; state.bimestreIdx=0; state.filtro=""; state.view="curso"; render(); };
+  });
+  app.querySelector('[data-action="add-curso"]').onclick = function(){
+    var name = prompt("Nombre del nuevo curso (ej: 1° grado, 6° año):");
+    if(!name) return;
+    name = name.trim();
+    if(!name || cursos[name]) return;
+    var bim = {}; BIMESTRES.forEach(function(b){ bim[b]=[]; });
+    cursos[name] = { alumnos:[], bimestres:bim };
+    saveDB(); render();
+  };
+}
+
+function topbar(opts){
+  var html = '<div class="topbar">';
+  html += '<button class="back" data-action="back">‹</button>';
+  html += '<div class="crumbs"><div class="eyebrow">'+escapeHtml(opts.eyebrow)+'</div><h1>'+escapeHtml(opts.title)+'</h1></div>';
+  html += '<div class="spacer"></div>';
+  if(opts.pend!==null && opts.pend!==undefined && opts.pend>0){
+    html += '<div class="pending-pill">'+opts.pend+' pendientes</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+/* ---------- CURSO ---------- */
+function renderCurso(){
+  var nivel = state.nivel, cursoName = state.curso;
+  var cursoObj = getCurso(nivel, cursoName);
+  if(!cursoObj){ state.view="nivel"; return render(); }
+  var label = BIMESTRES[state.bimestreIdx];
+  var acts = ensureBimestre(cursoObj, label);
+  var pendTotal = countPendientesCurso(cursoObj);
+
+  var filtro = state.filtro.trim().toLowerCase();
+  var alumnos = cursoObj.alumnos.filter(function(a){
+    return !filtro || a.toLowerCase().indexOf(filtro)>=0;
+  });
+
+  app.innerHTML =
+  topbar({back:"nivel", eyebrow:NIVEL_LABEL[nivel], title:cursoName, pend:pendTotal})+
+  '<div class="bimestre-tabs">'+
+    BIMESTRES.map(function(b,i){
+      return '<button class="bimestre-tab'+(i===state.bimestreIdx?' active':'')+'" data-action="set-bimestre" data-idx="'+i+'">'+b.replace(" Bimestre","")+'</button>';
+    }).join("")+
+  '</div>'+
+  '<div class="toolbar">'+
+    tbtn("manage-alumnos","👥","Alumnos ("+cursoObj.alumnos.length+")")+
+    tbtn("manage-actividades","📋","Actividades ("+acts.length+")")+
+    tbtn("goto-stats","📊","Estadísticas")+
+    tbtn("export-curso","⬇","Exportar")+
+    tbtn("import-curso","⬆","Importar")+
+  '</div>'+
+  '<div class="search-row"><input type="text" id="search-alumno" placeholder="Buscar alumno…" value="'+escapeHtml(state.filtro)+'"></div>'+
+  renderTable(cursoObj, label, acts, alumnos);
+
+  bindCursoEvents(cursoObj, label, acts);
+}
+
+function renderTable(cursoObj, label, acts, alumnos){
+  if(cursoObj.alumnos.length===0){
+    return '<div class="no-activities">Todavía no cargaste alumnos en este curso.<br>'+
+      '<button class="btn accent" data-action="manage-alumnos" style="margin-top:14px;">+ Agregar alumnos</button></div>';
+  }
+  if(acts.length===0){
+    return '<div class="no-activities">No hay actividades cargadas para '+label.toLowerCase()+'.<br>'+
+      '<button class="btn accent" data-action="manage-actividades" style="margin-top:14px;">+ Agregar actividad</button></div>';
+  }
+  var html = '<div class="table-wrap"><table class="grades"><thead><tr><th class="name-col">Alumno</th>';
+  acts.forEach(function(a,ai){
+    html += '<th data-action="rename-act-head" data-actidx="'+ai+'"><span class="act-name">'+escapeHtml(a.name)+'</span></th>';
+  });
+  html += '</tr></thead><tbody>';
+  alumnos.forEach(function(al){
+    html += '<tr><td class="name-col">'+escapeHtml(al)+'</td>';
+    acts.forEach(function(a,ai){
+      var g = a.grades[al];
+      var v = g && g.v ? g.v : null;
+      var pending = g && g.p;
+      var t = tierOf(v);
+      var cls = pending ? "badge pending" : "badge "+tierClass(t);
+      var display = v ? v : (pending ? "···" : "+");
+      html += '<td class="cell-wrap"><span class="'+cls+'" data-action="open-cell" data-alumno="'+escapeHtml(al)+'" data-actidx="'+ai+'">'+escapeHtml(display)+'</span></td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function bindCursoEvents(cursoObj, label, acts){
+  app.querySelector('[data-action="back"]').onclick = function(){ state.view="nivel"; render(); };
+  app.querySelectorAll('[data-action="set-bimestre"]').forEach(function(el){
+    el.onclick=function(){ state.bimestreIdx=parseInt(el.dataset.idx,10); render(); };
+  });
+  var searchEl = app.querySelector("#search-alumno");
+  if(searchEl){
+    searchEl.oninput = function(){ state.filtro = searchEl.value; renderTableOnly(); };
+    // keep focus after re-render of only the table region: simplest is full render but restore caret
+  }
+  app.querySelectorAll('[data-action="manage-alumnos"]').forEach(function(el){ el.onclick=function(){ openManageAlumnos(cursoObj); }; });
+  app.querySelectorAll('[data-action="manage-actividades"]').forEach(function(el){ el.onclick=function(){ openManageActividades(cursoObj,label); }; });
+  var statsBtn = app.querySelector('[data-action="goto-stats"]');
+  if(statsBtn) statsBtn.onclick = function(){ state.statsBimestreIdx = state.bimestreIdx; state.view="stats"; render(); };
+  var expBtn = app.querySelector('[data-action="export-curso"]');
+  if(expBtn) expBtn.onclick = function(){ exportCurso(state.nivel, state.curso); };
+  var impBtn = app.querySelector('[data-action="import-curso"]');
+  if(impBtn) impBtn.onclick = function(){ triggerImport({nivel:state.nivel, curso:state.curso}); };
+
+  app.querySelectorAll('[data-action="open-cell"]').forEach(function(el){
+    el.onclick=function(){
+      openCellModal(state.nivel, cursoObj, label, parseInt(el.dataset.actidx,10), el.dataset.alumno);
+    };
+  });
+  app.querySelectorAll('[data-action="rename-act-head"]').forEach(function(el){
+    el.onclick=function(){ openManageActividades(cursoObj,label); };
+  });
+}
+
+function renderTableOnly(){
+  // re-render whole curso view but preserve scroll/focus reasonably (simple approach)
+  var cursoObj = getCurso(state.nivel, state.curso);
+  var label = BIMESTRES[state.bimestreIdx];
+  var acts = ensureBimestre(cursoObj, label);
+  var wrap = app.querySelector(".table-wrap") || app.querySelector(".no-activities");
+  var filtro = state.filtro.trim().toLowerCase();
+  var alumnos = cursoObj.alumnos.filter(function(a){ return !filtro || a.toLowerCase().indexOf(filtro)>=0; });
+  var html = renderTable(cursoObj, label, acts, alumnos);
+  var temp = document.createElement("div");
+  temp.innerHTML = html;
+  wrap.replaceWith(temp.firstChild);
+  bindCursoEvents(cursoObj, label, acts);
+  var s = app.querySelector("#search-alumno");
+  if(s){ s.focus(); s.value = state.filtro; s.setSelectionRange(s.value.length, s.value.length); }
+}
+
+/* ===================== modal helpers ===================== */
+var modalRoot = document.getElementById("modal-root");
+function openModal(html){
+  modalRoot.innerHTML = '<div class="modal-backdrop" data-action="close-modal"><div class="modal" id="modal-inner"></div></div>';
+  modalRoot.querySelector("#modal-inner").innerHTML = html;
+  modalRoot.querySelector('[data-action="close-modal"]').onclick = function(e){
+    if(e.target===e.currentTarget) closeModal();
+  };
+  return modalRoot.querySelector("#modal-inner");
+}
+function closeModal(){ modalRoot.innerHTML=""; pendingCellCtx=null; }
+
+/* ---------- modal: editar celda ---------- */
+function openCellModal(nivel, cursoObj, label, actIdx, alumno){
+  var act = cursoObj.bimestres[label][actIdx];
+  var g = act.grades[alumno] || {v:null,p:false};
+  var scaleSets = nivel==="secundaria" ? [{title:null, items:SCALES.secundaria}]
+    : [{title:"Escala conceptual", items:SCALES.primaria_clasica}, {title:"Escala nueva", items:SCALES.primaria_nueva}];
+
+  var body = '<h3>'+escapeHtml(alumno)+'</h3>'+
+    '<p class="sub">'+escapeHtml(act.name)+' · '+label+'</p>';
+
+  scaleSets.forEach(function(set){
+    if(set.title) body += '<div class="field-label">'+set.title+'</div>';
+    else body += '<div class="field-label">Calificación</div>';
+    body += '<div class="chip-row">'+ set.items.map(function(o){
+      var on = g.v && g.v.toUpperCase()===o.code;
+      return '<button type="button" class="chip t'+o.tier+(on?' on':'')+'" data-code="'+o.code+'">'+o.code+'</button>';
+    }).join("") + '</div>';
+  });
+
+  body += '<div class="field-label">Otro valor / texto libre</div>'+
+    '<input type="text" id="cell-custom" placeholder="Ej: S/A" value="'+escapeHtml(g.v && !isKnownCode(g.v) ? g.v : "")+'">'+
+    '<div class="toggle-row"><div class="lbl">Marcar como pendiente</div>'+
+    '<label class="switch"><input type="checkbox" id="cell-pending" '+(g.p?"checked":"")+'><span class="track"></span></label></div>'+
+    '<div class="field-label">Nota (opcional)</div>'+
+    '<input type="text" id="cell-note" placeholder="Ej: pedir próxima clase" value="'+escapeHtml(g.n||"")+'">'+
+    '<div class="actions">'+
+      '<button class="btn danger" data-action="clear-cell">Borrar</button>'+
+      '<button class="btn primary" data-action="save-cell" style="flex:2;">Guardar</button>'+
+    '</div>';
+
+  var m = openModal(body);
+  var selectedCode = g.v || null;
+  m.querySelectorAll(".chip").forEach(function(chip){
+    chip.onclick = function(){
+      var code = chip.dataset.code;
+      if(selectedCode===code){ selectedCode=null; } else { selectedCode=code; }
+      m.querySelectorAll(".chip").forEach(function(c){ c.classList.toggle("on", c.dataset.code===selectedCode); });
+      if(selectedCode) m.querySelector("#cell-custom").value="";
+    };
+  });
+  m.querySelector("#cell-custom").oninput = function(e){
+    if(e.target.value.trim()){ selectedCode=null; m.querySelectorAll(".chip").forEach(function(c){c.classList.remove("on");}); }
+  };
+  m.querySelector('[data-action="save-cell"]').onclick = function(){
+    var custom = m.querySelector("#cell-custom").value.trim();
+    var value = custom || selectedCode || null;
+    var pending = m.querySelector("#cell-pending").checked;
+    var note = m.querySelector("#cell-note").value.trim();
+    var entry = {v:value, p:pending};
+    if(note) entry.n = note;
+    act.grades[alumno] = entry;
+    saveDB(); closeModal(); render();
+  };
+  m.querySelector('[data-action="clear-cell"]').onclick = function(){
+    delete act.grades[alumno];
+    saveDB(); closeModal(); render();
+  };
+}
+function isKnownCode(v){
+  var all = SCALES.secundaria.concat(SCALES.primaria_clasica, SCALES.primaria_nueva);
+  return all.some(function(o){ return o.code===String(v).toUpperCase(); });
+}
+
+/* ---------- modal: gestionar alumnos ---------- */
+function openManageAlumnos(cursoObj){
+  var body = '<h3>Alumnos</h3><p class="sub">'+cursoObj.alumnos.length+' en el curso</p>'+
+    '<div class="list-manage" id="alumnos-list"></div>'+
+    '<div class="add-row"><input type="text" id="new-alumno" placeholder="Apellido, Nombre"><button class="btn accent" data-action="add-alumno">Agregar</button></div>'+
+    '<div class="actions"><button class="btn primary" style="flex:1;" data-action="close-modal-btn">Listo</button></div>';
+  var m = openModal(body);
+  function paint(){
+    var list = m.querySelector("#alumnos-list");
+    list.innerHTML = cursoObj.alumnos.map(function(a,i){
+      return '<div class="list-row"><input type="text" data-idx="'+i+'" value="'+escapeHtml(a)+'">'+
+        '<button class="rm" data-idx="'+i+'">×</button></div>';
+    }).join("");
+    list.querySelectorAll("input").forEach(function(inp){
+      inp.onchange = function(){
+        var i = parseInt(inp.dataset.idx,10);
+        var oldName = cursoObj.alumnos[i];
+        var newName = inp.value.trim();
+        if(!newName) { inp.value = oldName; return; }
+        if(newName!==oldName){
+          cursoObj.alumnos[i] = newName;
+          // rename in all grade maps
+          BIMESTRES.forEach(function(b){
+            (cursoObj.bimestres[b]||[]).forEach(function(act){
+              if(act.grades[oldName]){ act.grades[newName]=act.grades[oldName]; delete act.grades[oldName]; }
+            });
+          });
+          saveDB();
+        }
+      };
+    });
+    list.querySelectorAll(".rm").forEach(function(btn){
+      btn.onclick = function(){
+        var i = parseInt(btn.dataset.idx,10);
+        var name = cursoObj.alumnos[i];
+        if(!confirm("¿Quitar a "+name+" del curso? Se perderán sus notas cargadas.")) return;
+        cursoObj.alumnos.splice(i,1);
+        BIMESTRES.forEach(function(b){
+          (cursoObj.bimestres[b]||[]).forEach(function(act){ delete act.grades[name]; });
+        });
+        saveDB(); paint();
+      };
+    });
+  }
+  paint();
+  m.querySelector('[data-action="add-alumno"]').onclick = function(){
+    var inp = m.querySelector("#new-alumno");
+    var name = inp.value.trim();
+    if(!name) return;
+    if(cursoObj.alumnos.indexOf(name)>=0){ inp.value=""; return; }
+    cursoObj.alumnos.push(name);
+    saveDB(); inp.value=""; paint();
+  };
+  m.querySelector('[data-action="close-modal-btn"]').onclick = function(){ saveDB(); closeModal(); render(); };
+}
+
+/* ---------- modal: gestionar actividades (columnas del bimestre) ---------- */
+function openManageActividades(cursoObj, label){
+  var acts = ensureBimestre(cursoObj, label);
+  var body = '<h3>Actividades</h3><p class="sub">'+label+'</p>'+
+    '<div class="list-manage" id="acts-list"></div>'+
+    '<div class="add-row"><input type="text" id="new-act" placeholder="Nombre de la actividad"><button class="btn accent" data-action="add-act">Agregar</button></div>'+
+    '<div class="actions"><button class="btn primary" style="flex:1;" data-action="close-modal-btn">Listo</button></div>';
+  var m = openModal(body);
+  function paint(){
+    var list = m.querySelector("#acts-list");
+    list.innerHTML = acts.map(function(a,i){
+      return '<div class="list-row"><input type="text" data-idx="'+i+'" value="'+escapeHtml(a.name)+'">'+
+        '<button class="rm" data-idx="'+i+'">×</button></div>';
+    }).join("");
+    list.querySelectorAll("input").forEach(function(inp){
+      inp.onchange = function(){
+        var i = parseInt(inp.dataset.idx,10);
+        var v = inp.value.trim();
+        if(!v){ inp.value = acts[i].name; return; }
+        acts[i].name = v; saveDB();
+      };
+    });
+    list.querySelectorAll(".rm").forEach(function(btn){
+      btn.onclick = function(){
+        var i = parseInt(btn.dataset.idx,10);
+        if(!confirm('¿Eliminar la actividad "'+acts[i].name+'"? Se perderán las notas cargadas en esa columna.')) return;
+        acts.splice(i,1);
+        saveDB(); paint();
+      };
+    });
+  }
+  paint();
+  m.querySelector('[data-action="add-act"]').onclick = function(){
+    var inp = m.querySelector("#new-act");
+    var name = inp.value.trim();
+    if(!name) return;
+    acts.push({name:name, grades:{}});
+    saveDB(); inp.value=""; paint();
+  };
+  m.querySelector('[data-action="close-modal-btn"]').onclick = function(){ saveDB(); closeModal(); render(); };
+}
+
+/* ===================== estadísticas ===================== */
+function renderStats(){
+  var nivel = state.nivel, cursoName = state.curso;
+  var cursoObj = getCurso(nivel, cursoName);
+  if(!cursoObj){ state.view="home"; return render(); }
+
+  var options = ['<option value="todos">Todos los bimestres</option>'].concat(
+    BIMESTRES.map(function(b,i){ return '<option value="'+i+'"'+(state.statsBimestreIdx===i?" selected":"")+'>'+b+'</option>'; })
+  );
+
+  app.innerHTML =
+  topbar({back:"curso", eyebrow:"Estadísticas", title:cursoName, pend:null})+
+  '<div class="search-row"><select id="stats-bim" style="width:100%;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--paper-raised);font-size:14px;">'+options.join("")+'</select></div>'+
+  '<div id="stats-body"></div>';
+
+  app.querySelector('[data-action="back"]').onclick = function(){ state.view="curso"; render(); };
+  var sel = app.querySelector("#stats-bim");
+  sel.onchange = function(){
+    state.statsBimestreIdx = sel.value==="todos" ? "todos" : parseInt(sel.value,10);
+    paintStatsBody(cursoObj);
+  };
+  paintStatsBody(cursoObj);
+}
+
+function paintStatsBody(cursoObj){
+  var body = app.querySelector("#stats-body");
+  var labels = state.statsBimestreIdx==="todos" ? BIMESTRES : [BIMESTRES[state.statsBimestreIdx]];
+
+  var allActs = [];
+  labels.forEach(function(l){ allActs = allActs.concat(cursoObj.bimestres[l]||[]); });
+
+  var totalCeldas=0, cargadas=0, pendientes=0;
+  var dist = {}; // code -> count
+  var perStudent = {}; // alumno -> {sum, n, pend}
+  cursoObj.alumnos.forEach(function(a){ perStudent[a]={sum:0,n:0,pend:0}; });
+
+  allActs.forEach(function(act){
+    cursoObj.alumnos.forEach(function(al){
+      totalCeldas++;
+      var g = act.grades[al];
+      if(!g) return;
+      if(g.p) { pendientes++; perStudent[al].pend++; }
+      if(g.v){
+        cargadas++;
+        var code = g.v.toUpperCase();
+        dist[code] = (dist[code]||0)+1;
+        var t = tierOf(g.v);
+        if(t){ perStudent[al].sum += t; perStudent[al].n++; }
+      }
+    });
+  });
+
+  var distArr = Object.keys(dist).map(function(k){ return {code:k, count:dist[k]}; }).sort(function(a,b){ return b.count-a.count; });
+  var maxCount = distArr.length ? distArr[0].count : 1;
+
+  var studentRows = cursoObj.alumnos.map(function(a){
+    var s = perStudent[a];
+    var avg = s.n ? s.sum/s.n : null;
+    return {name:a, avg:avg, pend:s.pend, n:s.n};
+  }).sort(function(a,b){
+    if(a.avg===null && b.avg===null) return 0;
+    if(a.avg===null) return 1;
+    if(b.avg===null) return -1;
+    return a.avg-b.avg;
+  });
+
+  var html = '<div class="stat-cards">'+
+    statCard(allActs.length, "Actividades")+
+    statCard(cargadas, "Notas cargadas")+
+    statCard(pendientes, "Pendientes")+
+    statCard(totalCeldas ? Math.round(cargadas/totalCeldas*100)+"%" : "0%", "Completado")+
+  '</div>';
+
+  html += '<div class="stats-section"><h3>Distribución de calificaciones</h3>';
+  if(distArr.length===0){ html += '<p class="sub">Todavía no hay notas cargadas en este período.</p>'; }
+  else {
+    distArr.forEach(function(d){
+      var t = tierOf(d.code) || 0;
+      var color = "var(--tier"+(t||"0")+")";
+      if(t===0) color = "var(--ink-faint)";
+      html += '<div class="dist-bar-row"><span class="code">'+escapeHtml(d.code)+'</span>'+
+        '<div class="dist-bar-track"><div class="dist-bar-fill" style="width:'+(d.count/maxCount*100)+'%;background:'+color+';"></div></div>'+
+        '<span class="cnt">'+d.count+'</span></div>';
+    });
+  }
+  html += '</div>';
+
+  html += '<div class="stats-section"><h3>Por alumno (los que necesitan más atención primero)</h3>';
+  studentRows.forEach(function(s){
+    var t = s.avg===null ? null : Math.round(s.avg);
+    var badgeClass = t===null ? "badge empty" : "badge t"+t;
+    var display = s.avg===null ? "s/d" : s.avg.toFixed(1);
+    html += '<div class="student-stat-row"><span class="sname">'+escapeHtml(s.name)+'</span>'+
+      (s.pend>0 ? '<span class="pending-pill" style="padding:4px 9px;">'+s.pend+' pend.</span>' : '')+
+      '<span class="'+badgeClass+'">'+display+'</span></div>';
+  });
+  html += '</div>';
+
+  body.innerHTML = html;
+}
+function statCard(num, lbl){
+  return '<div class="stat-card"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>';
+}
+
+/* ===================== exportar / importar ===================== */
+function downloadJSON(obj, filename){
+  var blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 400);
+}
+function exportAll(){
+  downloadJSON({tipo:"cuaderno-notas-completo", fecha:new Date().toISOString(), data:DB}, "notas_completo_"+dateStamp()+".json");
+}
+function exportCurso(nivel, curso){
+  var obj = {}; obj[nivel]={}; obj[nivel][curso]=DB[nivel][curso];
+  downloadJSON({tipo:"cuaderno-notas-curso", fecha:new Date().toISOString(), nivel:nivel, curso:curso, data:obj}, "notas_"+curso.replace(/\s+/g,"_")+"_"+dateStamp()+".json");
+}
+function dateStamp(){
+  var d = new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function triggerImport(scope){
+  var input = document.createElement("input");
+  input.type="file"; input.accept="application/json";
+  input.onchange = function(){
+    var file = input.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var parsed = JSON.parse(reader.result);
+        var incoming = parsed.data || parsed; // tolerate raw DB export too
+        if(scope && scope.nivel && scope.curso){
+          if(incoming[scope.nivel] && incoming[scope.nivel][scope.curso]){
+            if(!confirm("Se reemplazarán los datos de \""+scope.curso+"\" con lo importado. ¿Continuar?")) return;
+            DB[scope.nivel][scope.curso] = incoming[scope.nivel][scope.curso];
+          } else {
+            alert("El archivo no contiene datos para este curso.");
+            return;
+          }
+        } else {
+          if(!confirm("Se reemplazará TODO el cuaderno con los datos importados. ¿Continuar?")) return;
+          if(incoming.primaria && incoming.secundaria){ DB = incoming; }
+          else { alert("El archivo no tiene el formato esperado."); return; }
+        }
+        saveDB(); render();
+        alert("Importación completa.");
+      }catch(e){
+        alert("No se pudo leer el archivo: "+e.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+/* ===================== arranque ===================== */
+DB = loadDB();
+// asegurar estructura de bimestres completa en todos los cursos
+["primaria","secundaria"].forEach(function(niv){
+  Object.values(DB[niv]||{}).forEach(function(c){
+    BIMESTRES.forEach(function(b){ if(!c.bimestres[b]) c.bimestres[b]=[]; });
+  });
+});
+render();
+
+})();
+
+</script>
+</body>
+</html>
