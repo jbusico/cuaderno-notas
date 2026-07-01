@@ -350,6 +350,8 @@ var BIMESTRES = ["Primer Bimestre","Segundo Bimestre","Tercer Bimestre","Cuarto 
 var API_URL = "https://cuaderno-notas.vercel.app/api/notas";
 var API_KEY = "7b0b73fb23e49335fce1b15bf29aeaaf3b9262502306229f"; // debe coincidir con la env var API_KEY en Vercel
 var pushTimer = null;
+var lastKnownUpdatedAt = null;
+var hasUnsentChanges = false;
 
 var NIVEL_LABEL = { primaria: "Primaria", secundaria: "Secundaria" };
 var NIVEL_ACCENT = { primaria: "var(--primaria)", secundaria: "var(--secundaria)" };
@@ -385,6 +387,32 @@ var DB = null;
 var state = { view:"home", nivel:null, curso:null, bimestreIdx:0, filtro:"", statsBimestreIdx:"todos" };
 var pendingCellCtx = null; // {nivel,curso,bimestreLabel,actIdx,alumno}
 
+/* ---------- persistencia de la navegacion (para sobrevivir a un reload) ---------- */
+var NAV_STATE_KEY = "cuaderno_notas_nav_v1";
+function saveNavState(){
+  try{
+    localStorage.setItem(NAV_STATE_KEY, JSON.stringify({
+      view:state.view, nivel:state.nivel, curso:state.curso,
+      bimestreIdx:state.bimestreIdx, statsBimestreIdx:state.statsBimestreIdx
+    }));
+  }catch(e){}
+}
+function restoreNavState(){
+  var raw;
+  try{ raw = localStorage.getItem(NAV_STATE_KEY); }catch(e){ return; }
+  if(!raw) return;
+  var saved;
+  try{ saved = JSON.parse(raw); }catch(e){ return; }
+  if(!saved || !saved.nivel || !DB[saved.nivel]) return;
+  if((saved.view==="curso" || saved.view==="stats") && !DB[saved.nivel][saved.curso]) return;
+  if(saved.view!=="nivel" && saved.view!=="curso" && saved.view!=="stats") return;
+  state.view = saved.view;
+  state.nivel = saved.nivel;
+  state.curso = saved.curso || null;
+  state.bimestreIdx = saved.bimestreIdx || 0;
+  state.statsBimestreIdx = saved.statsBimestreIdx || "todos";
+}
+
 /* ===================== persistencia ===================== */
 function loadDB(){
   try{
@@ -401,15 +429,17 @@ function saveDB(){
 }
 
 /* ---------- sincronizacion con el backend ---------- */
-function setSyncBadge(state){
+function setSyncBadge(status){
   var el = document.getElementById("sync-badge");
   if(!el) return;
-  if(state==="ok"){ el.textContent="✓ Sincronizado"; el.style.color="#3F7D5C"; }
-  else if(state==="saving"){ el.textContent="… Guardando"; el.style.color="#C6912A"; }
-  else if(state==="loading"){ el.textContent="… Cargando"; el.style.color="#5B564C"; }
-  else if(state==="offline"){ el.textContent="⚠ Sin conexión (guardado local)"; el.style.color="#B5502F"; }
+  if(status==="ok"){ el.textContent="✓ Sincronizado"; el.style.color="#3F7D5C"; }
+  else if(status==="saving"){ el.textContent="… Guardando"; el.style.color="#C6912A"; }
+  else if(status==="loading"){ el.textContent="… Cargando"; el.style.color="#5B564C"; }
+  else if(status==="offline"){ el.textContent="⚠ Sin conexión (guardado local)"; el.style.color="#B5502F"; }
 }
+function isModalOpen(){ return modalRoot && modalRoot.innerHTML.trim()!==""; }
 function scheduleServerPush(){
+  hasUnsentChanges = true;
   clearTimeout(pushTimer);
   pushTimer = setTimeout(pushToServer, 600);
 }
@@ -421,6 +451,10 @@ function pushToServer(){
     body: JSON.stringify({ data: DB })
   }).then(function(res){
     if(!res.ok) throw new Error("http "+res.status);
+    return res.json();
+  }).then(function(json){
+    lastKnownUpdatedAt = json.updatedAt;
+    hasUnsentChanges = false;
     setSyncBadge("ok");
   }).catch(function(){ setSyncBadge("offline"); });
 }
@@ -431,10 +465,26 @@ function pullFromServer(){
     .then(function(json){
       if(json.data){
         DB = json.data;
+        lastKnownUpdatedAt = json.updatedAt;
         try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){}
         render();
       } else {
         pushToServer(); // todavia no hay nada guardado en el servidor: sembramos con lo local
+      }
+      setSyncBadge("ok");
+    }).catch(function(){ setSyncBadge("offline"); });
+}
+/* sondeo periodico y silencioso, para reflejar cambios hechos desde otro dispositivo sin recargar */
+function pollServer(){
+  if(hasUnsentChanges || isModalOpen()) return; // no pisar cambios locales sin guardar o en edicion
+  fetch(API_URL, { headers:{ "x-api-key":API_KEY } })
+    .then(function(res){ if(!res.ok) throw new Error("http "+res.status); return res.json(); })
+    .then(function(json){
+      if(json.data && json.updatedAt && json.updatedAt!==lastKnownUpdatedAt){
+        DB = json.data;
+        lastKnownUpdatedAt = json.updatedAt;
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){}
+        render();
       }
       setSyncBadge("ok");
     }).catch(function(){ setSyncBadge("offline"); });
@@ -481,6 +531,7 @@ function escapeHtml(s){
 var app = document.getElementById("app");
 
 function render(){
+  saveNavState();
   document.documentElement.style.setProperty("--accent", state.nivel ? NIVEL_ACCENT[state.nivel] : "var(--primaria)");
   if(state.view==="home") return renderHome();
   if(state.view==="nivel") return renderNivel();
@@ -1030,11 +1081,13 @@ DB = loadDB();
     BIMESTRES.forEach(function(b){ if(!c.bimestres[b]) c.bimestres[b]=[]; });
   });
 });
+restoreNavState();
 render();
 pullFromServer();
 document.addEventListener("visibilitychange", function(){
   if(document.visibilityState==="visible") pullFromServer();
 });
+setInterval(pollServer, 6000);
 
 })();
 
