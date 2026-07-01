@@ -16,13 +16,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --paper:#FAF6EE;
+  --paper:#F1E9D6;
   --paper-raised:#FFFFFF;
   --ink:#22201B;
   --ink-soft:#5B564C;
   --ink-faint:#948C7C;
-  --line:#E1D8C4;
-  --line-strong:#CBBFA4;
+  --line:#D8C9A6;
+  --line-strong:#BDA97A;
   --primaria:#2F5D8A;
   --primaria-soft:#E6EDF4;
   --secundaria:#B5502F;
@@ -384,7 +384,10 @@ var SCALES = {
 
 /* ---------- estado global ---------- */
 var DB = null;
-var state = { view:"home", nivel:null, curso:null, bimestreIdx:0, filtro:"", statsBimestreIdx:"todos" };
+var state = { view:"home", nivel:null, curso:null, bimestreIdx:0, filtro:"", statsBimestreIdx:"todos",
+  archivoAnio:null, archivoNivel:null, archivoCurso:null, archivoBimestreIdx:0 };
+var PRIMARIA_ORDER = ["Primer grado","Segundo grado","Tercer grado","Cuarto grado","Quinto grado","Sexto grado","Septimo grado"];
+var SECUNDARIA_ORDER = ["1° año","2° año","3° año","4° año","5° año"];
 var pendingCellCtx = null; // {nivel,curso,bimestreLabel,actIdx,alumno}
 
 /* ---------- persistencia de la navegacion (para sobrevivir a un reload) ---------- */
@@ -526,6 +529,158 @@ function escapeHtml(s){
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
   });
 }
+function emptyBimestresObj(){
+  var b={}; BIMESTRES.forEach(function(x){ b[x]=[]; }); return b;
+}
+
+/* ===================== cierre de ciclo lectivo ===================== */
+function cerrarCiclo(){
+  var anio = prompt("¿Qué ciclo lectivo estás cerrando? (ej: 2026)", String(new Date().getFullYear()));
+  if(!anio) return;
+  anio = anio.trim();
+  if(!anio) return;
+  if(DB.archivo && DB.archivo[anio] && !confirm("Ya existe un ciclo archivado con el nombre \""+anio+"\". ¿Sobrescribirlo?")) return;
+  if(!confirm(
+    "Se va a archivar todo el ciclo \""+anio+"\" (con sus notas, queda visible en \"Historial\") y los cursos van a avanzar automáticamente al año siguiente arrastrando la lista de alumnos (las notas arrancan en blanco). Después vas a poder entrar a cada curso y ajustar altas y bajas puntuales.\n\nEsta acción no se puede deshacer fácilmente. ¿Continuar?"
+  )) return;
+
+  if(!DB.archivo) DB.archivo = {};
+  DB.archivo[anio] = JSON.parse(JSON.stringify({ primaria: DB.primaria, secundaria: DB.secundaria }));
+
+  var oldPrimaria = DB.primaria, oldSecundaria = DB.secundaria;
+  var newPrimaria = {}, newSecundaria = {};
+
+  // cursos con nombres fuera de la progresion estandar: se mantienen igual, solo se vacian las notas
+  Object.keys(oldPrimaria).forEach(function(name){
+    if(PRIMARIA_ORDER.indexOf(name)===-1){
+      newPrimaria[name] = { alumnos: oldPrimaria[name].alumnos.slice(), bimestres: emptyBimestresObj() };
+    }
+  });
+  Object.keys(oldSecundaria).forEach(function(name){
+    if(SECUNDARIA_ORDER.indexOf(name)===-1){
+      newSecundaria[name] = { alumnos: oldSecundaria[name].alumnos.slice(), bimestres: emptyBimestresObj() };
+    }
+  });
+
+  // Primer grado arranca vacio: los alumnos nuevos se cargan a mano (alta)
+  newPrimaria[PRIMARIA_ORDER[0]] = { alumnos: [], bimestres: emptyBimestresObj() };
+  for(var i=1;i<PRIMARIA_ORDER.length;i++){
+    var origen = oldPrimaria[PRIMARIA_ORDER[i-1]];
+    newPrimaria[PRIMARIA_ORDER[i]] = { alumnos: origen ? origen.alumnos.slice() : [], bimestres: emptyBimestresObj() };
+  }
+  // Septimo grado (ultimo de primaria) promociona a 1er año de secundaria
+  var septimo = oldPrimaria[PRIMARIA_ORDER[PRIMARIA_ORDER.length-1]];
+  newSecundaria[SECUNDARIA_ORDER[0]] = { alumnos: septimo ? septimo.alumnos.slice() : [], bimestres: emptyBimestresObj() };
+  for(var j=1;j<SECUNDARIA_ORDER.length;j++){
+    var origenS = oldSecundaria[SECUNDARIA_ORDER[j-1]];
+    newSecundaria[SECUNDARIA_ORDER[j]] = { alumnos: origenS ? origenS.alumnos.slice() : [], bimestres: emptyBimestresObj() };
+  }
+  // 5to año de secundaria egresa: no se arrastra a ningun curso nuevo (queda solo en el archivo)
+
+  DB.primaria = newPrimaria;
+  DB.secundaria = newSecundaria;
+
+  saveDB();
+  state.view="home"; state.nivel=null; state.curso=null;
+  render();
+  alert("Ciclo \""+anio+"\" archivado. Los cursos avanzaron de año. Revisá cada curso para agregar los alumnos nuevos y sacar los que ya no están.");
+}
+
+/* ===================== ARCHIVO / HISTORIAL (solo lectura) ===================== */
+function renderArchivoLista(){
+  var anios = Object.keys(DB.archivo||{}).sort().reverse();
+  app.innerHTML =
+    topbar({back:"home", eyebrow:"Historial", title:"Ciclos anteriores", pend:null})+
+    (anios.length ?
+      '<div class="curso-grid">'+
+        anios.map(function(a){
+          return '<button class="curso-card" data-action="archivo-goto-anio" data-anio="'+escapeHtml(a)+'">'+
+            '<div class="top-row"><h3>'+escapeHtml(a)+'</h3></div>'+
+            '<div class="count">Primaria y Secundaria</div>'+
+          '</button>';
+        }).join("")+
+      '</div>'
+      : '<div class="empty-state"><div class="big">🗂️</div>Todavía no cerraste ningún ciclo lectivo.</div>');
+  app.querySelector('[data-action="back"]').onclick = function(){ state.view="home"; render(); };
+  app.querySelectorAll('[data-action="archivo-goto-anio"]').forEach(function(el){
+    el.onclick = function(){ state.archivoAnio = el.dataset.anio; state.view="archivo-nivel"; render(); };
+  });
+}
+function renderArchivoNivel(){
+  var anio = state.archivoAnio;
+  var snap = (DB.archivo||{})[anio] || {primaria:{},secundaria:{}};
+  app.innerHTML =
+    topbar({back:"archivo-lista", eyebrow:"Historial "+anio, title:"Elegí el nivel", pend:null})+
+    '<div class="nivel-grid">'+
+      nivelCard("primaria","Nivel","Primaria",Object.keys(snap.primaria||{}).length+" cursos",0)+
+      nivelCard("secundaria","Nivel","Secundaria",Object.keys(snap.secundaria||{}).length+" cursos",0)+
+    '</div>';
+  app.querySelector('[data-action="back"]').onclick = function(){ state.view="archivo-lista"; render(); };
+  app.querySelectorAll('[data-action="goto-nivel"]').forEach(function(el){
+    el.onclick = function(){ state.archivoNivel = el.dataset.nivel; state.view="archivo-curso-lista"; render(); };
+  });
+}
+function renderArchivoCursoLista(){
+  var anio = state.archivoAnio, nivel = state.archivoNivel;
+  var snap = ((DB.archivo||{})[anio]||{})[nivel] || {};
+  var names = Object.keys(snap);
+  app.innerHTML =
+    topbar({back:"archivo-nivel", eyebrow:"Historial "+anio+" · "+NIVEL_LABEL[nivel], title:"Cursos", pend:null})+
+    (names.length ?
+      '<div class="curso-grid">'+
+        names.map(function(name){
+          var c = snap[name];
+          return '<button class="curso-card" data-action="archivo-goto-curso" data-curso="'+escapeHtml(name)+'">'+
+            '<div class="top-row"><h3>'+escapeHtml(name)+'</h3></div>'+
+            '<div class="count">'+(c.alumnos?c.alumnos.length:0)+' alumnos</div>'+
+          '</button>';
+        }).join("")+
+      '</div>'
+      : '<div class="empty-state"><div class="big">🗂️</div>Sin cursos guardados en este nivel.</div>');
+  app.querySelector('[data-action="back"]').onclick = function(){ state.view="archivo-nivel"; render(); };
+  app.querySelectorAll('[data-action="archivo-goto-curso"]').forEach(function(el){
+    el.onclick = function(){ state.archivoCurso = el.dataset.curso; state.archivoBimestreIdx=0; state.view="archivo-curso"; render(); };
+  });
+}
+function renderArchivoCurso(){
+  var anio=state.archivoAnio, nivel=state.archivoNivel, cursoName=state.archivoCurso;
+  var cursoObj = (((DB.archivo||{})[anio]||{})[nivel]||{})[cursoName];
+  if(!cursoObj){ state.view="archivo-curso-lista"; return render(); }
+  var label = BIMESTRES[state.archivoBimestreIdx];
+  var acts = (cursoObj.bimestres && cursoObj.bimestres[label]) || [];
+  app.innerHTML =
+    topbar({back:"archivo-curso-lista", eyebrow:"Historial "+anio, title:cursoName, pend:null})+
+    '<div class="bimestre-tabs">'+
+      BIMESTRES.map(function(b,i){
+        return '<button class="bimestre-tab'+(i===state.archivoBimestreIdx?' active':'')+'" data-action="archivo-set-bimestre" data-idx="'+i+'">'+b.replace(" Bimestre","")+'</button>';
+      }).join("")+
+    '</div>'+
+    renderArchivoTable(cursoObj, acts);
+  app.querySelector('[data-action="back"]').onclick = function(){ state.view="archivo-curso-lista"; render(); };
+  app.querySelectorAll('[data-action="archivo-set-bimestre"]').forEach(function(el){
+    el.onclick = function(){ state.archivoBimestreIdx = parseInt(el.dataset.idx,10); render(); };
+  });
+}
+function renderArchivoTable(cursoObj, acts){
+  if(!acts.length) return '<div class="no-activities">No hay actividades cargadas en este bimestre.</div>';
+  var alumnos = cursoObj.alumnos||[];
+  return '<div class="table-wrap"><table class="grades"><thead><tr>'+
+    '<th class="name-col">Alumno</th>'+
+    acts.map(function(a){ return '<th><span class="act-name">'+escapeHtml(a.name)+'</span></th>'; }).join("")+
+    '</tr></thead><tbody>'+
+    alumnos.map(function(al){
+      return '<tr><td class="name-col">'+escapeHtml(al)+'</td>'+
+        acts.map(function(a){
+          var g = (a.grades && a.grades[al]) || {v:null,p:false};
+          var t = tierOf(g.v);
+          var cls = g.p ? "pending" : tierClass(t);
+          var txt = g.p ? "···" : (g.v==null ? "—" : escapeHtml(String(g.v)));
+          return '<td><span class="badge '+cls+'">'+txt+'</span></td>';
+        }).join("")+
+      '</tr>';
+    }).join("")+
+    '</tbody></table></div>';
+}
 
 /* ===================== render root ===================== */
 var app = document.getElementById("app");
@@ -537,6 +692,10 @@ function render(){
   if(state.view==="nivel") return renderNivel();
   if(state.view==="curso") return renderCurso();
   if(state.view==="stats") return renderStats();
+  if(state.view==="archivo-lista") return renderArchivoLista();
+  if(state.view==="archivo-nivel") return renderArchivoNivel();
+  if(state.view==="archivo-curso-lista") return renderArchivoCursoLista();
+  if(state.view==="archivo-curso") return renderArchivoCurso();
 }
 
 /* ---------- HOME ---------- */
@@ -560,6 +719,8 @@ function renderHome(){
   '<div class="toolbar" style="margin-top:24px;">'+
     tbtn("export-all","⬇","Exportar todo")+
     tbtn("import-all","⬆","Importar")+
+    tbtn("cerrar-ciclo","🎓","Cerrar ciclo / Nuevo año")+
+    tbtn("ver-historial","📚","Historial de ciclos")+
   '</div>';
 
   bindHomeEvents();
@@ -581,6 +742,8 @@ function bindHomeEvents(){
   });
   app.querySelector('[data-action="export-all"]').onclick = exportAll;
   app.querySelector('[data-action="import-all"]').onclick = function(){ triggerImport(null); };
+  app.querySelector('[data-action="cerrar-ciclo"]').onclick = cerrarCiclo;
+  app.querySelector('[data-action="ver-historial"]').onclick = function(){ state.view="archivo-lista"; render(); };
 }
 
 /* ---------- NIVEL ---------- */
