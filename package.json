@@ -1,0 +1,9 @@
+{
+  "name": "cuaderno-notas-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend simple (Vercel + MongoDB) para sincronizar el Cuaderno de Notas entre dispositivos",
+  "dependencies": {
+    "mongodb": "^6.9.0"
+  }
+}
